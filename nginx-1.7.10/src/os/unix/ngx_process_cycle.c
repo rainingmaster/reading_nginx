@@ -137,6 +137,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
 
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
 
+	/* 将使用fork建立多个worker */
     ngx_start_worker_processes(cycle, ccf->worker_processes,
                                NGX_PROCESS_RESPAWN);
     ngx_start_cache_manager_processes(cycle, 0);
@@ -146,6 +147,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
     sigio = 0;
     live = 1;
 
+	/* master的死循环，主要处理各种信号 */
     for ( ;; ) {
         if (delay) {
             if (ngx_sigalrm) {
@@ -177,7 +179,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
         ngx_log_debug1(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                        "wake up, sigio %i", sigio);
 
-        if (ngx_reap) {
+        if (ngx_reap) { //处理各种信号
             ngx_reap = 0;
             ngx_log_debug0(NGX_LOG_DEBUG_EVENT, cycle->log, 0, "reap children");
 
@@ -188,7 +190,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
             ngx_master_process_exit(cycle);
         }
 
-        if (ngx_terminate) {
+        if (ngx_terminate) { //处理各种信号
             if (delay == 0) {
                 delay = 50;
             }
@@ -201,7 +203,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
             sigio = ccf->worker_processes + 2 /* cache processes */;
 
             if (delay > 1000) {
-                ngx_signal_worker_processes(cycle, SIGKILL);
+                ngx_signal_worker_processes(cycle, SIGKILL); //发信号给所有worker
             } else {
                 ngx_signal_worker_processes(cycle,
                                        ngx_signal_value(NGX_TERMINATE_SIGNAL));
@@ -365,7 +367,7 @@ ngx_start_worker_processes(ngx_cycle_t *cycle, ngx_int_t n, ngx_int_t type)
 
     for (i = 0; i < n; i++) {
 
-        ngx_spawn_process(cycle, ngx_worker_process_cycle,
+        ngx_spawn_process(cycle, ngx_worker_process_cycle,  //ngx_worker_process_cycle为回调函数，用于worker死循环
                           (void *) (intptr_t) i, "worker process", type);
 
         ch.pid = ngx_processes[ngx_process_slot].pid;
@@ -527,7 +529,7 @@ ngx_signal_worker_processes(ngx_cycle_t *cycle, int signo)
         }
 
         if (ch.command) {
-            if (ngx_write_channel(ngx_processes[i].channel[0],
+            if (ngx_write_channel(ngx_processes[i].channel[0],  //用于往直前记录的各个channel中写内容--即socket中。发送需要的命令
                                   &ch, sizeof(ngx_channel_t), cycle->log)
                 == NGX_OK)
             {
@@ -754,7 +756,7 @@ ngx_worker_process_cycle(ngx_cycle_t *cycle, void *data)
     ngx_core_conf_t  *ccf;
 
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
-
+//多进程，在linux下面没有
     if (ngx_threads_n) {
         if (ngx_init_threads(ngx_threads_n, ccf->thread_stack_size, cycle)
             == NGX_ERROR)
@@ -793,6 +795,7 @@ ngx_worker_process_cycle(ngx_cycle_t *cycle, void *data)
     }
 #endif
 
+	//worker死循环
     for ( ;; ) {
 
         if (ngx_exiting) {
@@ -821,6 +824,7 @@ ngx_worker_process_cycle(ngx_cycle_t *cycle, void *data)
 
         ngx_log_debug0(NGX_LOG_DEBUG_EVENT, cycle->log, 0, "worker cycle");
 
+		//处理各种事件和定时器
         ngx_process_events_and_timers(cycle);
 
         if (ngx_terminate) {

@@ -31,7 +31,7 @@ static ngx_conf_enum_t  ngx_debug_points[] = {
     { ngx_null_string, 0 }
 };
 
-
+/* 核心模块的命令，基本用在master部分 */
 static ngx_command_t  ngx_core_commands[] = {
 
     { ngx_string("daemon"),
@@ -167,7 +167,7 @@ static ngx_core_module_t  ngx_core_module_ctx = {
     ngx_core_module_init_conf
 };
 
-
+/* 核心module */
 ngx_module_t  ngx_core_module = {
     NGX_MODULE_V1,
     &ngx_core_module_ctx,                  /* module context */
@@ -197,7 +197,7 @@ static char        *ngx_signal;
 
 static char **ngx_os_environ;
 
-
+/* 大名鼎鼎的main函数 */
 int ngx_cdecl
 main(int argc, char *const *argv)
 {
@@ -212,6 +212,7 @@ main(int argc, char *const *argv)
         return 1;
     }
 
+	/* 读取配置，并给各个下面用到的全局变量赋值*/
     if (ngx_get_options(argc, argv) != NGX_OK) {
         return 1;
     }
@@ -275,7 +276,7 @@ main(int argc, char *const *argv)
     ngx_regex_init();
 #endif
 
-    ngx_pid = ngx_getpid();
+    ngx_pid = ngx_getpid();//即getpid，ngx自己重新命名了
 
     log = ngx_log_init(ngx_prefix);
     if (log == NULL) {
@@ -292,6 +293,7 @@ main(int argc, char *const *argv)
      * ngx_process_options()
      */
 
+	/* init_cycle即为初次建立时使用的循环，后面又会建立新的循环。这个循环可以理解为后面master/worker循环的上下文所有内容 */
     ngx_memzero(&init_cycle, sizeof(ngx_cycle_t));
     init_cycle.log = log;
     ngx_cycle = &init_cycle;
@@ -325,6 +327,7 @@ main(int argc, char *const *argv)
         return 1;
     }
 
+	/* 给各个modole定下索引 */
     ngx_max_module = 0;
     for (i = 0; ngx_modules[i]; i++) {
         ngx_modules[i]->index = ngx_max_module++;
@@ -400,11 +403,11 @@ main(int argc, char *const *argv)
 
     ngx_use_stderr = 0;
 
-    if (ngx_process == NGX_PROCESS_SINGLE) {
+    if (ngx_process == NGX_PROCESS_SINGLE) {//如果单进程的循环
         ngx_single_process_cycle(cycle);
 
     } else {
-        ngx_master_process_cycle(cycle);
+        ngx_master_process_cycle(cycle); //多进程，使用master/worker模式的循环
     }
 
     return 0;

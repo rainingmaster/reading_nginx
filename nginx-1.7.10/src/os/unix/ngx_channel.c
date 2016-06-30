@@ -76,7 +76,7 @@ ngx_write_channel(ngx_socket_t s, ngx_channel_t *ch, size_t size,
     msg.msg_iov = iov;
     msg.msg_iovlen = 1;
 
-    n = sendmsg(s, &msg, 0);
+    n = sendmsg(s, &msg, 0);//往该套接字发内容，worker将在event中接收到写消息，然后触发
 
     if (n == -1) {
         err = ngx_errno;
