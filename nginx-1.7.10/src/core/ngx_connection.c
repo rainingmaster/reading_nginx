@@ -818,8 +818,9 @@ ngx_close_listening_sockets(ngx_cycle_t *cycle)
 }
 
 
+/* 从连接池中获取连接，并进行一些初始化 */
 ngx_connection_t *
-ngx_get_connection(ngx_socket_t s, ngx_log_t *log)
+ngx_get_connection(ngx_socket_t s, ngx_log_t *log) //已经带上连接好的套接字，直接可以放入连接结构体
 {
     ngx_uint_t         instance;
     ngx_event_t       *rev, *wev;
@@ -837,10 +838,11 @@ ngx_get_connection(ngx_socket_t s, ngx_log_t *log)
 
     /* ngx_mutex_lock */
 
+	//从连接池中获取一个空闲连接
     c = ngx_cycle->free_connections;
 
     if (c == NULL) {
-        ngx_drain_connections();
+        ngx_drain_connections();// 将一些keepalive连接给释放掉
         c = ngx_cycle->free_connections;
     }
 
@@ -854,8 +856,8 @@ ngx_get_connection(ngx_socket_t s, ngx_log_t *log)
         return NULL;
     }
 
-    ngx_cycle->free_connections = c->data;
-    ngx_cycle->free_connection_n--;
+    ngx_cycle->free_connections = c->data; //c->data中的为next，空闲链接指向下一个，c指向的已被使用
+    ngx_cycle->free_connection_n--; //空闲连接数-1
 
     /* ngx_mutex_unlock */
 
@@ -863,27 +865,31 @@ ngx_get_connection(ngx_socket_t s, ngx_log_t *log)
         ngx_cycle->files[s] = c;
     }
 
+	//使用指针保留原读写事件event
     rev = c->read;
     wev = c->write;
 
-    ngx_memzero(c, sizeof(ngx_connection_t));
+    ngx_memzero(c, sizeof(ngx_connection_t)); //清空
 
-    c->read = rev;
-    c->write = wev;
+    c->read = rev; //使用之前保留的read事件
+    c->write = wev; //使用之前保留的write事件
     c->fd = s;
     c->log = log;
 
-    instance = rev->instance;
+    instance = rev->instance; //保留原过期标志位
 
+	//清空
     ngx_memzero(rev, sizeof(ngx_event_t));
     ngx_memzero(wev, sizeof(ngx_event_t));
 
+	//instance标志位置反，用于标示一个事件是否过期
     rev->instance = !instance;
     wev->instance = !instance;
 
     rev->index = NGX_INVALID_INDEX;
     wev->index = NGX_INVALID_INDEX;
 
+	//读写事件的data都指回连接本身
     rev->data = c;
     wev->data = c;
 
@@ -893,6 +899,7 @@ ngx_get_connection(ngx_socket_t s, ngx_log_t *log)
 }
 
 
+/* 释放连接回连接池，将使用完的连接放回free_connections */
 void
 ngx_free_connection(ngx_connection_t *c)
 {
@@ -910,6 +917,7 @@ ngx_free_connection(ngx_connection_t *c)
 }
 
 
+/* 关闭某个连接 */
 void
 ngx_close_connection(ngx_connection_t *c)
 {
@@ -930,15 +938,15 @@ ngx_close_connection(ngx_connection_t *c)
         ngx_del_timer(c->write);
     }
 
-    if (ngx_del_conn) {
+    if (ngx_del_conn) { //定义了删除连接的函数
         ngx_del_conn(c, NGX_CLOSE_EVENT);
 
-    } else {
-        if (c->read->active || c->read->disabled) {
+    } else { //只能直接删除监听了
+        if (c->read->active || c->read->disabled) { //删除读事件的监听
             ngx_del_event(c->read, NGX_READ_EVENT, NGX_CLOSE_EVENT);
         }
 
-        if (c->write->active || c->write->disabled) {
+        if (c->write->active || c->write->disabled) { //删除写事件的监听
             ngx_del_event(c->write, NGX_WRITE_EVENT, NGX_CLOSE_EVENT);
         }
     }
@@ -975,7 +983,7 @@ ngx_close_connection(ngx_connection_t *c)
     fd = c->fd;
     c->fd = (ngx_socket_t) -1;
 
-    if (ngx_close_socket(fd) == -1) {
+    if (ngx_close_socket(fd) == -1) { //关闭套接字
 
         err = ngx_socket_errno;
 
@@ -1007,12 +1015,16 @@ ngx_close_connection(ngx_connection_t *c)
 }
 
 
+/* 重用连接。reuseable传入1(一般c->reuseable为0),则将c插入链表；reuseable传入0，则将c从链表取出 */
+//在ngx_http_set_keepalive函数处理的最后阶段，会以第二个参数为1的形式调用ngx_reusable_connection函数。
+//而在ngx_http_keepalive_handler函数中会以第二个参数为0，来调用ngx_reusable_connection。
 void
 ngx_reusable_connection(ngx_connection_t *c, ngx_uint_t reusable)
 {
     ngx_log_debug1(NGX_LOG_DEBUG_CORE, c->log, 0,
                    "reusable connection: %ui", reusable);
 
+	// 一旦一个keepalive的连接正常处理了，就将其从reusable队列中移除 
     if (c->reusable) {
         ngx_queue_remove(&c->queue);
 
@@ -1021,11 +1033,14 @@ ngx_reusable_connection(ngx_connection_t *c, ngx_uint_t reusable)
 #endif
     }
 
+	// 在ngx_http_set_keepalive中会将reusable置为1，reusable为1的直接效果，就是将该连接插到reusable_connections_queue中
     c->reusable = reusable;
 
+	// 当reusable为0时，意味着该keepalive被正常的处理掉了，不应该被再次添加到reusable队列中了。 
     if (reusable) {
         /* need cast as ngx_cycle is volatile */
 
+		// 这里使用头插法，较新的连接靠近头部，时间越久未被处理的连接越靠尾
         ngx_queue_insert_head(
             (ngx_queue_t *) &ngx_cycle->reusable_connections_queue, &c->queue);
 
@@ -1036,6 +1051,7 @@ ngx_reusable_connection(ngx_connection_t *c, ngx_uint_t reusable)
 }
 
 
+/* 当ngx_get_connection获取不到连接时（即并发比较高的时候，连接都用完了），那么使用ngx_drain_connections来释放长连接，将长连接从queue拿出来，放回到free_connections，然后再获取 */
 static void
 ngx_drain_connections(void)
 {
@@ -1043,19 +1059,25 @@ ngx_drain_connections(void)
     ngx_queue_t       *q;
     ngx_connection_t  *c;
 
+	// 清理32个keepalive连接，以尝试回收一些连接池供新连接使用 
     for (i = 0; i < 32; i++) {
-        if (ngx_queue_empty(&ngx_cycle->reusable_connections_queue)) {
+        if (ngx_queue_empty(&ngx_cycle->reusable_connections_queue)) { //可重用连接的链表为空
             break;
         }
 
+		// reusable连接队列是从头插入的，意味着越靠近队列尾部的连接，空闲未被
+        // 使用的时间就越长，这种情况下，优先回收它，类似LRU
         q = ngx_queue_last(&ngx_cycle->reusable_connections_queue);
         c = ngx_queue_data(q, ngx_connection_t, queue);
 
         ngx_log_debug0(NGX_LOG_DEBUG_CORE, c->log, 0,
                        "reusing connection");
 
-        c->close = 1;
-        c->read->handler(c->read);
+		// 这里的handler是ngx_http_keepalive_handler，这函数里，由于close被置1，  
+        // 所以会执行ngx_http_close_connection来释放连接，这样也就发生了keepalive  
+        // 连接被强制断掉的现象了。
+        c->close = 1; //关闭了
+        c->read->handler(c->read); //处理完事务
     }
 }
 

@@ -391,10 +391,14 @@ ngx_epoll_add_event(ngx_event_t *ev, ngx_int_t event, ngx_uint_t flags)
     ngx_connection_t    *c;
     struct epoll_event   ee;
 
+	//每个事件的data成员存放着其对应的ngx_connection_t连接
     c = ev->data;
 
+	//下面会根据event参数确定当前事件是读事件还是写事件，这会决定events是加上EPOLLIN标志还是EPOLLOUT标志位
     events = (uint32_t) event;
 
+	//关于下面这段代码的解释：需要结合后面的依据active标志位确定是否为活跃事件的代码来看
+	/*所以nginx这里就是为了避免这种情况，当要在epoll中加入对一个fd读事件(即NGX_READ_EVENT)的监听时，nginx先看一下与这个fd相关的写事件的状态，即e=c->write，如果此时e->active为1，说明该fd之前已经以NGX_WRITE_EVENT方式被加到epoll中了，此时只需要使用mod方式，将我们的需求加进去，否则才使用add方式，将该fd注册到epoll中。反之处理NGX_WRITE_EVENT时道理是一样的。*/
     if (event == NGX_READ_EVENT) {
         e = c->write;
         prev = EPOLLOUT;
@@ -410,28 +414,32 @@ ngx_epoll_add_event(ngx_event_t *ev, ngx_int_t event, ngx_uint_t flags)
 #endif
     }
 
+	//依据active标志位确定是否为活跃事件
     if (e->active) {
-        op = EPOLL_CTL_MOD;
+        op = EPOLL_CTL_MOD;//是活跃事件，修改事件
         events |= prev;
 
     } else {
-        op = EPOLL_CTL_ADD;
+        op = EPOLL_CTL_ADD;//不是活跃事件，增加事件
     }
 
-    ee.events = events | (uint32_t) flags;
+    ee.events = events | (uint32_t) flags; //设置flags位，例如延后处理的post_event
+
+	//ptr存储的是ngx_connection_t连接，instance是过期事件标志位(这样不是直接改地址了?)
     ee.data.ptr = (void *) ((uintptr_t) c | ev->instance);
 
     ngx_log_debug3(NGX_LOG_DEBUG_EVENT, ev->log, 0,
                    "epoll add event: fd:%d op:%d ev:%08XD",
                    c->fd, op, ee.events);
 
+	//往epoll加入需要监听的事件
     if (epoll_ctl(ep, op, c->fd, &ee) == -1) {
         ngx_log_error(NGX_LOG_ALERT, ev->log, ngx_errno,
                       "epoll_ctl(%d, %d) failed", op, c->fd);
         return NGX_ERROR;
     }
 
-    ev->active = 1;
+    ev->active = 1;//事件置为活跃
 #if 0
     ev->oneshot = (flags & NGX_ONESHOT_EVENT) ? 1 : 0;
 #endif
@@ -560,6 +568,7 @@ ngx_epoll_del_connection(ngx_connection_t *c, ngx_uint_t flags)
 }
 
 
+//epoll的处理事件函数
 static ngx_int_t
 ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
 {
@@ -577,6 +586,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                    "epoll timer: %M", timer);
 
+	//获取监听的时间，返回时间个数，时间内容在event_list中
     events = epoll_wait(ep, event_list, (int) nevents, timer);
 
     err = (events == -1) ? ngx_errno : 0;
@@ -613,14 +623,29 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
         return NGX_ERROR;
     }
 
+	//遍历本次epoll_wait返回的所有事件
     for (i = 0; i < events; i++) {
+		//获取连接ngx_connection_t的地址，可以看之前传入的内容。即本event的connection
         c = event_list[i].data.ptr;
 
+		//连接的地址最后一位具有特殊意义：用于存储instance变量，将其取出来
+		/*过期事件:
+		举例，假设epoll_wait一次返回三个事件，在处理第一个事件的过程中，由于业务的需要关闭了一个连接，而这个连接恰好对应第三个事件。这样，在处理到第三个事件时，这个事件就是过期事件了，一旦处理就会出错。
+		那么，怎么解决这个问题呢？把关闭的这个连接的fd套接字置为-1？这样并不能解决所有问题。原因是ngx_connection_t的复用。
+		假设第三个事件对应的ngx_connection_t连接中的fd套接字原先是10，处理第一个事件时把这个连接的套接字关闭了，同时置为-1，并且调用ngx_free_connection将这个连接归还给连接池。在ngx_process_events方法的循环中开始i处理第二个事件，恰好第二个事件是建立新连接事件，调用ngx_get_connection从连接池中取出的连接非常可能是刚刚释放的第三个事件对应的连接。由于套接字10刚刚被释放，linux内核非常有可能把刚刚释放的套接字10又分配给新建立的连接。因此，在循环中处理第三个事件的时候，这个时间就是过期的了！它对应的事件是关闭的连接而不是新建立的连接。
+		如何解决这个问题呢？用instance标志位。当调用ngx_get_connection从连接池中获取一个新连接时，instance标志位会被置反。下面看函数ngx_get_connection中对应的代码（src/core/ngx_connection.c）：*/
         instance = (uintptr_t) c & 1;
+		
+		//无论是32位还是64位机器，其地址最后一位一定是0，获取真正地址。因为之前最后一位用来存instance了
+		/* 指针最后一位是否为 0 取决于指针的类型。
+		指向字符的指针显然是连续的，没有理由最后一位为 0。
+		如果指针指向的数据类型长度超过两个字节，那么由于内存对齐机制的存在，该指针的最后一位必定为 0。（当然，该指针不能是通过类型转换得到的）*/
         c = (ngx_connection_t *) ((uintptr_t) c & (uintptr_t) ~1);
 
+		//取出读事件
         rev = c->read;
 
+		//判断读事件是否为过期事件  
         if (c->fd == -1 || rev->instance != instance) {
 
             /*
@@ -665,6 +690,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
             revents |= EPOLLIN|EPOLLOUT;
         }
 
+		//是读事件且该事件是活跃的
         if ((revents & EPOLLIN) && rev->active) {
 
 #if (NGX_HAVE_EPOLLRDHUP)
@@ -675,19 +701,21 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
 
             rev->ready = 1;
 
+			//如果是post类型事件，先放到链表中，延迟处理
             if (flags & NGX_POST_EVENTS) {
                 queue = rev->accept ? &ngx_posted_accept_events
                                     : &ngx_posted_events;
 
                 ngx_post_event(rev, queue);
 
-            } else {
+            } else {//立即调用事件回调方法来处理这个事件
                 rev->handler(rev);
             }
         }
 
         wev = c->write;
 
+		//写事件且是活跃的
         if ((revents & EPOLLOUT) && wev->active) {
 
             if (c->fd == -1 || wev->instance != instance) {

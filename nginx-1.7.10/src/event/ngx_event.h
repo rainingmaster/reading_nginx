@@ -416,12 +416,19 @@ extern ngx_event_actions_t   ngx_event_actions;
 
 
 #define ngx_process_changes  ngx_event_actions.process_changes
+
+//event系列中处理事件的函数，可能是epoll, select, poll等等
 #define ngx_process_events   ngx_event_actions.process_events
 #define ngx_done_events      ngx_event_actions.done
 
+//添加事件监听(本质上也是监听连接，只是监听连接的读/写事件)
 #define ngx_add_event        ngx_event_actions.add
+//删除事件监听(本质上也是监听连接，只是监听连接的读/写事件)
 #define ngx_del_event        ngx_event_actions.del
+
+//添加连接的监听(对所有事件监听。可能没有这个方法)
 #define ngx_add_conn         ngx_event_actions.add_conn
+//删除连接的监听(对所有事件监听。可能没有这个方法)
 #define ngx_del_conn         ngx_event_actions.del_conn
 
 #define ngx_add_timer        ngx_event_add_timer

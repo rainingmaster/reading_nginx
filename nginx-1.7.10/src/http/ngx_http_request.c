@@ -3056,6 +3056,8 @@ ngx_http_set_keepalive(ngx_http_request_t *r)
 #endif
 
     c->idle = 1;
+
+	//放入可重用连接队列
     ngx_reusable_connection(c, 1);
 
     ngx_add_timer(rev, clcf->keepalive_timeout);
