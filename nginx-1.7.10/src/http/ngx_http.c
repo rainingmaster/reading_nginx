@@ -307,6 +307,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
         module = ngx_modules[m]->ctx;
 
+		//调用postconfiguration的函数，实现对handler的初始化，相应的handler都会被存入相应phase[NGX_HTTP_XXX_PHASE]的handler数组中。
         if (module->postconfiguration) {
 
             ngx_http_probe_module_post_config(ngx_modules[m]);
