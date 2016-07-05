@@ -109,25 +109,26 @@ typedef struct {
     u_char                     addr[NGX_SOCKADDR_STRLEN + 1];
 } ngx_http_listen_opt_t;
 
-/* nginxÂ§ÑÁêÜhttpËøáÁ®ãÁöÑ11‰∏™Èò∂ÊÆµ */
+
+/* nginx¥¶¿Ìhttpπ˝≥Ãµƒ11∏ˆΩ◊∂Œ */
 typedef enum {
-    NGX_HTTP_POST_READ_PHASE = 0,
+    NGX_HTTP_POST_READ_PHASE = 0, //1
 
-    NGX_HTTP_SERVER_REWRITE_PHASE,
+    NGX_HTTP_SERVER_REWRITE_PHASE, //2
 
-    NGX_HTTP_FIND_CONFIG_PHASE,
-    NGX_HTTP_REWRITE_PHASE,
-    NGX_HTTP_POST_REWRITE_PHASE,
+    NGX_HTTP_FIND_CONFIG_PHASE, //3
+    NGX_HTTP_REWRITE_PHASE, //4
+    NGX_HTTP_POST_REWRITE_PHASE, //5
 
-    NGX_HTTP_PREACCESS_PHASE,
+    NGX_HTTP_PREACCESS_PHASE, //6
 
-    NGX_HTTP_ACCESS_PHASE,
-    NGX_HTTP_POST_ACCESS_PHASE,
+    NGX_HTTP_ACCESS_PHASE, //7
+    NGX_HTTP_POST_ACCESS_PHASE, //8
 
-    NGX_HTTP_TRY_FILES_PHASE,
-    NGX_HTTP_CONTENT_PHASE,
+    NGX_HTTP_TRY_FILES_PHASE, //9
+    NGX_HTTP_CONTENT_PHASE, //10
 
-    NGX_HTTP_LOG_PHASE
+    NGX_HTTP_LOG_PHASE //11
 } ngx_http_phases;
 
 typedef struct ngx_http_phase_handler_s  ngx_http_phase_handler_t;
@@ -149,6 +150,9 @@ typedef struct {
 } ngx_http_phase_engine_t;
 
 
+/*
+    ∂‘”¶√ø∏ˆΩ◊∂Œµƒ¥¶¿Ì∑Ω∑®
+*/
 typedef struct {
     ngx_array_t                handlers;
 } ngx_http_phase_t;

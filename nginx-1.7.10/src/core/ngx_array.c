@@ -44,6 +44,7 @@ ngx_array_destroy(ngx_array_t *a)
 }
 
 
+/* 往数组中加入元素 */
 void *
 ngx_array_push(ngx_array_t *a)
 {
