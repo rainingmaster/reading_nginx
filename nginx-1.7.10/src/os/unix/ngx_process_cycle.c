@@ -756,7 +756,8 @@ ngx_worker_process_cycle(ngx_cycle_t *cycle, void *data)
     ngx_core_conf_t  *ccf;
 
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
-//多进程，在linux下面没有
+
+	//多进程，在linux下面没有
     if (ngx_threads_n) {
         if (ngx_init_threads(ngx_threads_n, ccf->thread_stack_size, cycle)
             == NGX_ERROR)

@@ -235,19 +235,24 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
     }*/
     if (ngx_use_accept_mutex) {
 		//¸ºÔØ¾ùºâ´¦Àí
+		//ÔÚsrc/event/nginx_event_accept.c:ngx_event_accept()ÖĞ¼ÆËã£ºngx_accept_disabled = ngx_cycle->connection_n / 8 - ngx_cycle->free_connection_n;   ³õÊ¼ÖµÎª0£¬ÒÔºóÃ¿À´ĞÂ½¨Ò»¸öÁ¬½Ó£¬¶¼»á¸üĞÂÒ»ÏÂÖµ¡£
+		//µ±Ê£ÓàÁ¬½ÓÊıĞ¡ÓÚ×î´óÁ¬½ÓÊıµÄ1/8µÄÊ±ºòÎªÕı£¬±íÊ¾Á¬½ÓÓĞµã¶àÁË£¬ÓÚÊÇ·ÅÆúÒ»´ÎÕùËø¶¨»ú»á
         if (ngx_accept_disabled > 0) {
             ngx_accept_disabled--;
 
         } else {
-        	//µ÷ÓÃngx_trylock_accept_mutex·½·¨£¬³¢ÊÔ»ñÈ¡acceptËø
+        	//ÕâÀïngx_trylock_accept_mutexº¯Êı¾ÍÊÇÕùËø¶¨º¯Êı£¬³É¹¦ÕùµÃÁËËøÔò½«È«¾Ö±äÁ¿ngx_accept_mutex_heldÖÃÎª1£¬·ñÔòÖÃ0 
             if (ngx_trylock_accept_mutex(cycle) == NGX_ERROR) {
                 return;
             }
 
 			//ÄÃµ½Ëø
             if (ngx_accept_mutex_held) {
-				/*¸øflagsÔö¼Ó±ê¼ÇNGX_POST_EVENTS£¬Õâ¸ö±ê¼Ç×÷Îª´¦ÀíÊ±¼äºËĞÄº¯Êıngx_process_eventsµÄÒ»¸ö²ÎÊı£¬Õâ¸öº¯ÊıÖĞËùÓĞÊÂ¼ş½«ÑÓºó´¦Àí¡
-				£»á°ÑacceptÊÂ¼ş¶¼·Åµ½ngx_posted_accept_eventsÁ´±íÖĞ£¬epollin|epolloutÆÕÍ¨ÊÂ¼ş¶¼·Åµ½ngx_posted_eventsÁ´±íÖĞ */
+				/* 
+				   1. ¸øflagsÔö¼Ó±ê¼ÇNGX_POST_EVENTS£¬Õâ¸ö±ê¼Ç×÷Îª´¦ÀíÊ±¼äºËĞÄº¯Êıngx_process_eventsµÄÒ»¸ö²ÎÊı£¬Õâ¸öº¯ÊıÖĞËùÓĞÊÂ¼ş½«ÑÓºó´¦Àí¡£
+				»á°ÑacceptÊÂ¼ş¶¼·Åµ½ngx_posted_accept_eventsÁ´±íÖĞ£¬epollin|epolloutÆÕÍ¨ÊÂ¼ş¶¼·Åµ½ngx_posted_eventsÁ´±íÖĞ
+				   2. Õ¼ÓÃÁËacceptËøµÄ½ø³ÌÔÚ´¦ÀíÊÂ¼şµÄÊ±ºòÊÇÏÈ½«ÊÂ¼ş·ÅÈë¶ÓÁĞ£¬ºóĞøÂıÂı´¦Àí£¬ÒÔ±ã¾¡¿ì×ßµ½ÏÂÃæÊÍ·ÅËø¡£
+				*/
                 flags |= NGX_POST_EVENTS;
 
             } else {

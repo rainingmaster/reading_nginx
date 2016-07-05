@@ -318,6 +318,7 @@ ngx_open_listening_sockets(ngx_cycle_t *cycle)
 
     log = cycle->log;
 
+	/* 尝试5次，可以自己编译配置 */
     /* TODO: configurable try number */
 
     for (tries = 5; tries; tries--) {
@@ -408,7 +409,7 @@ ngx_open_listening_sockets(ngx_cycle_t *cycle)
             ngx_log_debug2(NGX_LOG_DEBUG_CORE, log, 0,
                            "bind() %V #%d ", &ls[i].addr_text, s);
 
-            if (bind(s, ls[i].sockaddr, ls[i].socklen) == -1) {
+            if (bind(s, ls[i].sockaddr, ls[i].socklen) == -1) { //bind绑定监听地址
                 err = ngx_socket_errno;
 
                 if (err != NGX_EADDRINUSE || !ngx_test_config) {
@@ -456,7 +457,7 @@ ngx_open_listening_sockets(ngx_cycle_t *cycle)
             }
 #endif
 
-            if (listen(s, ls[i].backlog) == -1) {
+            if (listen(s, ls[i].backlog) == -1) { //开始监听
                 ngx_log_error(NGX_LOG_EMERG, log, ngx_socket_errno,
                               "listen() to %V, backlog %d failed",
                               &ls[i].addr_text, ls[i].backlog);
@@ -484,7 +485,7 @@ ngx_open_listening_sockets(ngx_cycle_t *cycle)
         ngx_log_error(NGX_LOG_NOTICE, log, 0,
                       "try again to bind() after 500ms");
 
-        ngx_msleep(500);
+        ngx_msleep(500); //500ms后再尝试
     }
 
     if (failed) {

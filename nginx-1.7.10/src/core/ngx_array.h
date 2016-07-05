@@ -14,7 +14,9 @@
 
 
 typedef struct {
+	/* 数组具体数据 */
     void        *elts;
+	/* 数组大小 */
     ngx_uint_t   nelts;
     size_t       size;
     ngx_uint_t   nalloc;
