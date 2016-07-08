@@ -52,41 +52,42 @@ ngx_array_push(ngx_array_t *a)
     size_t       size;
     ngx_pool_t  *p;
 
-    if (a->nelts == a->nalloc) {
+    if (a->nelts == a->nalloc) { //长度=容量，已经满了
 
         /* the array is full */
 
-        size = a->size * a->nalloc;
+        size = a->size * a->nalloc; //当前数组所占总空间大小
 
-        p = a->pool;
+        p = a->pool; //数组所在内存池
 
-        if ((u_char *) a->elts + size == p->d.last
-            && p->d.last + a->size <= p->d.end)
+        /* 内存池大小仍足够 */
+        if ((u_char *) a->elts + size == p->d.last //数组末尾为内存池末尾
+            && p->d.last + a->size <= p->d.end) //内存池大小仍可以装下一个内容
         {
             /*
              * the array allocation is the last in the pool
              * and there is space for new allocation
              */
 
-            p->d.last += a->size;
-            a->nalloc++;
+            p->d.last += a->size; //内存使用空间增加
+            a->nalloc++; //容量加1
 
-        } else {
+        } else { //内存池大小已经不够了
             /* allocate a new array */
 
-            new = ngx_palloc(p, 2 * size);
+            new = ngx_palloc(p, 2 * size); //申请一个原来大小2倍的内存空间
             if (new == NULL) {
                 return NULL;
             }
 
-            ngx_memcpy(new, a->elts, size);
+            ngx_memcpy(new, a->elts, size); //拷贝到新的空间
             a->elts = new;
-            a->nalloc *= 2;
+            a->nalloc *= 2; //容量翻倍
         }
     }
 
-    elt = (u_char *) a->elts + a->size * a->nelts;
-    a->nelts++;
+    elt = (u_char *) a->elts + a->size * a->nelts;//新模块地址=数组起始指针elts+结构体大小size*数组之前长度
+    a->nelts++;//数组长度加1
 
     return elt;
 }

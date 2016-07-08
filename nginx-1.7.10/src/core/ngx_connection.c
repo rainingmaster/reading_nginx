@@ -24,6 +24,7 @@ ngx_create_listening(ngx_conf_t *cf, void *sockaddr, socklen_t socklen)
     struct sockaddr  *sa;
     u_char            text[NGX_SOCKADDR_STRLEN];
 
+	//加入一个listen，之后会对它加入相关配置
     ls = ngx_array_push(&cf->cycle->listening);
     if (ls == NULL) {
         return NULL;

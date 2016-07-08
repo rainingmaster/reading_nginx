@@ -1112,6 +1112,7 @@ ngx_http_spdy_state_headers(ngx_http_spdy_connection_t *sc, u_char *pos,
             return ngx_http_spdy_state_headers_skip(sc, pos, end);
         }
 
+		//为cookie头分配了2个元素的数组空间
         if (ngx_array_init(&r->headers_in.cookies, r->pool, 2,
                            sizeof(ngx_table_elt_t *))
             != NGX_OK)

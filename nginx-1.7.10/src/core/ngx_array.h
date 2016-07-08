@@ -14,12 +14,19 @@
 
 
 typedef struct {
-	/* 数组具体数据 */
+	/* 数组起始指针 */
     void        *elts;
-	/* 数组大小 */
+
+	/* 数组当前长度 */
     ngx_uint_t   nelts;
+
+	/* 数组中单个元素的大小 */
     size_t       size;
+
+	/* 数组容量 */
     ngx_uint_t   nalloc;
+
+	/* 数组所占用的内存池指针 */
     ngx_pool_t  *pool;
 } ngx_array_t;
 
@@ -30,6 +37,7 @@ void *ngx_array_push(ngx_array_t *a);
 void *ngx_array_push_n(ngx_array_t *a, ngx_uint_t n);
 
 
+/* 申请内存空间建立数组 */
 static ngx_inline ngx_int_t
 ngx_array_init(ngx_array_t *array, ngx_pool_t *pool, ngx_uint_t n, size_t size)
 {

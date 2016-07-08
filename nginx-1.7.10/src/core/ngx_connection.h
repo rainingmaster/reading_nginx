@@ -37,7 +37,7 @@ struct ngx_listening_s {
 #endif
 
     /* handler of accepted connection */
-    ngx_connection_handler_pt   handler;//当新的tcp连接成功建立后的处理方法
+    ngx_connection_handler_pt   handler;//当新的tcp连接成功建立后的处理方法，http的为ngx_http_init_connection，mail的为ngx_mail_init_connection
 
 	//目前主要用于HTTP或者mail等模块，用于保存当前监听端口对应着的所有主机名
     void               *servers;  /* array of ngx_http_in_addr_t, for example */
@@ -121,7 +121,8 @@ typedef enum {
 
 /* 在nginx中connection就是对tcp连接的封装，其中包括连接的socket，读事件，写事件。利用nginx封装的connection，可以很方便的使用nginx来处理与连接相关的事情，比如，建立连接，发送与接受数据等 */
 struct ngx_connection_s {
-	//连接未使用时，data用于充当连接池中空闲链表中的next指针。连接使用时由模块而定，HTTP中，data指向ngx_http_request_t
+	//连接未使用时，data用于充当连接池中空闲链表中的next指针。
+	//连接使用时由模块而定，HTTP中，data指向ngx_http_request_t，即请求结构体
     void               *data;
     ngx_event_t        *read; //读事件，事件里面的data，存回这个ngx_connection_s结构的指针
     ngx_event_t        *write; //读事件，事件里面的data，存回这个ngx_connection_s结构的指针

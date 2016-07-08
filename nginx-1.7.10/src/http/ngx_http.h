@@ -24,6 +24,7 @@ typedef struct ngx_http_chunked_s     ngx_http_chunked_t;
 typedef struct ngx_http_spdy_stream_s  ngx_http_spdy_stream_t;
 #endif
 
+//r为对应的请求结构，h为指向该请求头在headers_in.headers链表中对应节点的指针，offset为该请求头对应字段在ngx_http_headers_in_t结构中的偏移
 typedef ngx_int_t (*ngx_http_header_handler_pt)(ngx_http_request_t *r,
     ngx_table_elt_t *h, ngx_uint_t offset);
 typedef u_char *(*ngx_http_log_handler_pt)(ngx_http_request_t *r,

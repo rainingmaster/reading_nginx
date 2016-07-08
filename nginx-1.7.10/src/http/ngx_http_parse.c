@@ -100,10 +100,17 @@ static uint32_t  usual[] = {
 
 /* gcc, icc, msvc and others compile these switches as an jump table */
 
+/* 
+ * 解析请求链接，并记录下如请求方法method，请求链接uri等方法或位置
+ * 其中请求方法method转换为了宏，如NGX_HTTP_GET方便对比
+ * uri的位置也只需记录在buf中的位置即可。
+ * buf将存在r->header_in中，即请求头缓存
+*/
 ngx_int_t
 ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
 {
     u_char  c, ch, *p, *m;
+	//各种处理状态，用于下面分析过程中的跳转
     enum {
         sw_start = 0,
         sw_method,
@@ -142,7 +149,7 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
         switch (state) {
 
         /* HTTP methods: GET, HEAD, POST */
-        case sw_start:
+        case sw_start: //开始阶段
             r->request_start = p;
 
             if (ch == CR || ch == LF) {
@@ -156,7 +163,7 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
             state = sw_method;
             break;
 
-        case sw_method:
+        case sw_method: //获取请求方法阶段，如GET, POST, PUT
             if (ch == ' ') {
                 r->method_end = p - 1;
                 m = r->request_start;
@@ -823,6 +830,14 @@ done:
 }
 
 
+/* 解析请求头的每一行 */
+/*
+ * User-Agent: curl/7.15.5 (x86_64-redhat-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8b zlib/1.2.3 libidn/0.6.5
+ * Host: kugroup.mobile.kugou.com
+ * Pragma: no-cache
+ * Accept: *\/*
+ * Proxy-Connection: Keep-Alive\r\n\r\n 
+ */
 ngx_int_t
 ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
     ngx_uint_t allow_underscores)
@@ -852,45 +867,49 @@ ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
         "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
         "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 
-    state = r->state;
-    hash = r->header_hash;
-    i = r->lowcase_index;
+    state = r->state; //使用上一次的状态。默认为sw_start
+    hash = r->header_hash; //使用上一次的hash。默认为空
+    i = r->lowcase_index; //使用上一次的小写索引位
 
-    for (p = b->pos; p < b->last; p++) {
+	/*
+	 * b->pos
+	 * User-Agent: curl/7.15.5 (x86_64-redhat-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8b zlib/1.2.3 libidn/0.6.5\r\nHost: kugroup.mobile.kugou.com\r\nPragma: no-cache\r\nAccept: *\/*\r\nProxy-Connection: Keep-Alive\r\n\r\n
+	 */
+    for (p = b->pos; p < b->last; p++) {//反复对请求的内容进行处理啊..
         ch = *p;
 
         switch (state) {
 
         /* first char */
         case sw_start:
-            r->header_name_start = p;
-            r->invalid_header = 0;
+            r->header_name_start = p; //记录请求头真正的起始位置
+            r->invalid_header = 0; //有效请求头
 
             switch (ch) {
-            case CR:
+            case CR: //\r
                 r->header_end = p;
                 state = sw_header_almost_done;
                 break;
-            case LF:
+            case LF: //\n
                 r->header_end = p;
                 goto header_done;
             default:
                 state = sw_name;
 
-                c = lowcase[ch];
+                c = lowcase[ch]; //只要数字字母部分，且转为小写字母。其余为空\0
 
                 if (c) {
-                    hash = ngx_hash(0, c);
-                    r->lowcase_header[0] = c;
-                    i = 1;
+                    hash = ngx_hash(0, c); //计算hash
+                    r->lowcase_header[0] = c;//第一位
+                    i = 1;//接下来各个使用i++重复填充
                     break;
                 }
 
                 if (ch == '_') {
                     if (allow_underscores) {
                         hash = ngx_hash(0, ch);
-                        r->lowcase_header[0] = ch;
-                        i = 1;
+                        r->lowcase_header[0] = ch;//第一位
+                        i = 1;//接下来各个使用i++重复填充
 
                     } else {
                         r->invalid_header = 1;
@@ -911,6 +930,7 @@ ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
             break;
 
         /* header name */
+		//开始读请求头的名称
         case sw_name:
             c = lowcase[ch];
 
@@ -935,8 +955,8 @@ ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
             }
 
             if (ch == ':') {
-                r->header_name_end = p;
-                state = sw_space_before_value;
+                r->header_name_end = p; //头的名称结束的位置
+                state = sw_space_before_value; //接下来有个空格了
                 break;
             }
 
@@ -974,6 +994,7 @@ ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
             break;
 
         /* space* before header value */
+		//开始值前面的空格
         case sw_space_before_value:
             switch (ch) {
             case ' ':
@@ -991,12 +1012,13 @@ ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
                 return NGX_HTTP_PARSE_INVALID_HEADER;
             default:
                 r->header_start = p;
-                state = sw_value;
+                state = sw_value; //变为读取值
                 break;
             }
             break;
 
         /* header value */
+		//开始读请求头的值
         case sw_value:
             switch (ch) {
             case ' ':
@@ -1044,12 +1066,13 @@ ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
             }
             break;
 
+		 //返回NGX_HTTP_PARSE_INVALID_HEADER，表示请求头解析过程中遇到错误，一般为客户端发送了不符合协议规范的头部，此时nginx返回400错误；
         /* end of header line */
         case sw_almost_done:
             switch (ch) {
-            case LF:
+            case LF: //遇到一组/r/n，完成一组请求头解析
                 goto done;
-            case CR:
+            case CR: //两个\r，有误
                 break;
             default:
                 return NGX_HTTP_PARSE_INVALID_HEADER;
@@ -1072,17 +1095,20 @@ ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
     r->header_hash = hash;
     r->lowcase_index = i;
 
-    return NGX_AGAIN;
+    return NGX_AGAIN; //返回NGX_AGAIN，表示当前接收到的数据不够，一行请求头还未结束，需要继续下一轮循环
 
+//返回NGX_OK，表示解析出了[一行]请求头
 done:
 
-    b->pos = p + 1;
-    r->state = sw_start;
-    r->header_hash = hash;
-    r->lowcase_index = i;
+    b->pos = p + 1; //解析到的位置
+    r->state = sw_start; //重新置为开始
+    r->header_hash = hash; //算到的hahs
+    r->lowcase_index = i; //
 
     return NGX_OK;
 
+
+//返回NGX_HTTP_PARSE_HEADER_DONE，表示所有请求头已经成功的解析，这时请求的状态被设置为NGX_HTTP_PROCESS_REQUEST_STATE，意味着结束了请求读取阶段，正式进入了请求处理阶段
 header_done:
 
     b->pos = p + 1;
