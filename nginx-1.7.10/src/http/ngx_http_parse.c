@@ -962,6 +962,7 @@ ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
 
             if (ch == CR) {
                 r->header_name_end = p;
+				 //请求头的开始和结束点都应该在这开始算
                 r->header_start = p;
                 r->header_end = p;
                 state = sw_almost_done;
@@ -970,6 +971,7 @@ ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
 
             if (ch == LF) {
                 r->header_name_end = p;
+				 //请求头的开始和结束点都应该在这开始算
                 r->header_start = p;
                 r->header_end = p;
                 goto done;

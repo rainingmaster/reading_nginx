@@ -601,7 +601,9 @@ struct ngx_http_request_s {
     u_char                           *header_name_start;
 	//此次解析到的请求头名称的结束位置
     u_char                           *header_name_end;
+	//此次解析到的请求头值的起始位置
     u_char                           *header_start;
+	//此次解析到的请求头值的结束位置
     u_char                           *header_end;
 
     /*
