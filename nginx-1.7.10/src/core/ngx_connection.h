@@ -23,10 +23,10 @@ struct ngx_listening_s {
     size_t              addr_text_max_len;//存储ip地址的字符串addr_text最大长度
     ngx_str_t           addr_text;//以字符串形式存储ip地址
 
-	//套接字类型。types是SOCK_STREAM时，表示是tcp
+    //套接字类型。types是SOCK_STREAM时，表示是tcp
     int                 type;
 
-	//TCP实现监听时的backlog队列，它表示允许正在通过三次握手建立tcp连接但还没有任何进程开始处理的连接最大个数
+    //TCP实现监听时的backlog队列，它表示允许正在通过三次握手建立tcp连接但还没有任何进程开始处理的连接最大个数
     int                 backlog;
     int                 rcvbuf;//套接字接收缓冲区大小
     int                 sndbuf;//套接字发送缓冲区大小
@@ -39,7 +39,7 @@ struct ngx_listening_s {
     /* handler of accepted connection */
     ngx_connection_handler_pt   handler;//当新的tcp连接成功建立后的处理方法，http的为ngx_http_init_connection，mail的为ngx_mail_init_connection
 
-	//目前主要用于HTTP或者mail等模块，用于保存当前监听端口对应着的所有主机名
+    //目前主要用于HTTP或者mail等模块，用于保存当前监听端口对应着的所有主机名
     void               *servers;  /* array of ngx_http_in_addr_t, for example */
 
     ngx_log_t           log;
@@ -51,7 +51,7 @@ struct ngx_listening_s {
     /* should be here because of the deferred accept */
     ngx_msec_t          post_accept_timeout;//～秒后仍然没有收到用户的数据，就丢弃该连接
 
-	//前一个ngx_listening_t结构，用于组成单链表
+    //前一个ngx_listening_t结构，用于组成单链表
     ngx_listening_t    *previous;
     ngx_connection_t   *connection;//当前监听句柄对应的ngx_connection_t结构体
 
@@ -121,8 +121,8 @@ typedef enum {
 
 /* 在nginx中connection就是对tcp连接的封装，其中包括连接的socket，读事件，写事件。利用nginx封装的connection，可以很方便的使用nginx来处理与连接相关的事情，比如，建立连接，发送与接受数据等 */
 struct ngx_connection_s {
-	//连接未使用时，data用于充当连接池中空闲链表中的next指针。
-	//连接使用时由模块而定，HTTP中，data指向ngx_http_request_t，即请求结构体
+    //连接未使用时，data用于充当连接池中空闲链表中的next指针。
+    //连接使用时由模块而定，HTTP中，data指向ngx_http_request_t，即请求结构体
     void               *data;
     ngx_event_t        *read; //读事件，事件里面的data，存回这个ngx_connection_s结构的指针
     ngx_event_t        *write; //读事件，事件里面的data，存回这个ngx_connection_s结构的指针
@@ -140,7 +140,7 @@ struct ngx_connection_s {
 
     ngx_log_t          *log;//日志对象
 
-	/*内存池。一般在accept一个新的连接时，会创建一个内存池，而在这个连接结束时会销毁内存池。内存池大小是由上面listening成员的pool_size决定的*/
+    /*内存池。一般在accept一个新的连接时，会创建一个内存池，而在这个连接结束时会销毁内存池。内存池大小是由上面listening成员的pool_size决定的*/
     ngx_pool_t         *pool;
 
     struct sockaddr    *sockaddr; //连接客户端的sockaddr
@@ -153,23 +153,23 @@ struct ngx_connection_s {
     ngx_ssl_connection_t  *ssl;
 #endif
 
-	//本机监听端口对应的sockaddr结构体，实际上就是listening监听对象的sockaddr成员
+    //本机监听端口对应的sockaddr结构体，实际上就是listening监听对象的sockaddr成员
     struct sockaddr    *local_sockaddr;
     socklen_t           local_socklen;
 
     ngx_buf_t          *buffer;//用户接受、缓存客户端发来的字符流，buffer是由连接内存池分配的，大小自由决定
 
-	/*用来将当前连接以双向链表元素的形式添加到ngx_cycle_t核心结构体的reuseable_connection_queue双向链表中，表示可以重用的连接*/
+    /*用来将当前连接以双向链表元素的形式添加到ngx_cycle_t核心结构体的reuseable_connection_queue双向链表中，表示可以重用的连接*/
     ngx_queue_t         queue;
 
-	/*连接使用次数。ngx_connection_t结构体每次建立一条来自客户端的连接，或者主动向后端服务器发起连接时，number都会加1*/
+    /*连接使用次数。ngx_connection_t结构体每次建立一条来自客户端的连接，或者主动向后端服务器发起连接时，number都会加1*/
     ngx_atomic_uint_t   number;
 
     ngx_uint_t          requests;//处理的请求次数
 
     unsigned            buffered:8;
 
-	//本连接的日志级别，占用3位，取值范围为0～7，但实际只定义了5个值，由ngx_connection_log_error_e枚举表示。
+    //本连接的日志级别，占用3位，取值范围为0～7，但实际只定义了5个值，由ngx_connection_log_error_e枚举表示。
     unsigned            log_error:3;     /* ngx_connection_log_error_e */
 
     unsigned            unexpected_eof:1;//为1表示不期待字符流结束
@@ -183,7 +183,7 @@ struct ngx_connection_s {
 
     unsigned            sendfile:1;//为1表示正在将文件中的数据发往连接的另一端
     
-	/*为1表示只有连接套接字对应的发送缓冲区必须满足最低设置的大小阀值时，事件驱动模块才会分发该事件。这与ngx_handle_write_event方法中的lowat参数是对应的*/
+    /*为1表示只有连接套接字对应的发送缓冲区必须满足最低设置的大小阀值时，事件驱动模块才会分发该事件。这与ngx_handle_write_event方法中的lowat参数是对应的*/
     unsigned            sndlowat:1;
     unsigned            tcp_nodelay:2;   /* ngx_connection_tcp_nodelay_e */
     unsigned            tcp_nopush:2;    /* ngx_connection_tcp_nopush_e */

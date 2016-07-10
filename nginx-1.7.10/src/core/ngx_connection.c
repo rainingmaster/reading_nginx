@@ -24,7 +24,7 @@ ngx_create_listening(ngx_conf_t *cf, void *sockaddr, socklen_t socklen)
     struct sockaddr  *sa;
     u_char            text[NGX_SOCKADDR_STRLEN];
 
-	//º”»Î“ª∏ˆlisten£¨÷Æ∫Ûª·∂‘À¸º”»Îœ‡πÿ≈‰÷√
+    //º”»Î“ª∏ˆlisten£¨÷Æ∫Ûª·∂‘À¸º”»Îœ‡πÿ≈‰÷√
     ls = ngx_array_push(&cf->cycle->listening);
     if (ls == NULL) {
         return NULL;
@@ -319,7 +319,7 @@ ngx_open_listening_sockets(ngx_cycle_t *cycle)
 
     log = cycle->log;
 
-	/* ≥¢ ‘5¥Œ£¨ø…“‘◊‘º∫±‡“Î≈‰÷√ */
+    /* ≥¢ ‘5¥Œ£¨ø…“‘◊‘º∫±‡“Î≈‰÷√ */
     /* TODO: configurable try number */
 
     for (tries = 5; tries; tries--) {
@@ -840,7 +840,7 @@ ngx_get_connection(ngx_socket_t s, ngx_log_t *log) //“—æ≠¥¯…œ¡¨Ω”∫√µƒÃ◊Ω”◊÷£¨÷±Ω
 
     /* ngx_mutex_lock */
 
-	//¥”¡¨Ω”≥ÿ÷–ªÒ»°“ª∏ˆø’œ–¡¨Ω”
+    //¥”¡¨Ω”≥ÿ÷–ªÒ»°“ª∏ˆø’œ–¡¨Ω”
     c = ngx_cycle->free_connections;
 
     if (c == NULL) {
@@ -867,7 +867,7 @@ ngx_get_connection(ngx_socket_t s, ngx_log_t *log) //“—æ≠¥¯…œ¡¨Ω”∫√µƒÃ◊Ω”◊÷£¨÷±Ω
         ngx_cycle->files[s] = c;
     }
 
-	// π”√÷∏’Î±£¡Ù‘≠∂¡–¥ ¬º˛event
+    // π”√÷∏’Î±£¡Ù‘≠∂¡–¥ ¬º˛event
     rev = c->read;
     wev = c->write;
 
@@ -880,18 +880,18 @@ ngx_get_connection(ngx_socket_t s, ngx_log_t *log) //“—æ≠¥¯…œ¡¨Ω”∫√µƒÃ◊Ω”◊÷£¨÷±Ω
 
     instance = rev->instance; //±£¡Ù‘≠π˝∆⁄±Í÷æŒª
 
-	//«Âø’
+    //«Âø’
     ngx_memzero(rev, sizeof(ngx_event_t));
     ngx_memzero(wev, sizeof(ngx_event_t));
 
-	//instance±Í÷æŒª÷√∑¥£¨”√”⁄±Í æ“ª∏ˆ ¬º˛ «∑Òπ˝∆⁄
+    //instance±Í÷æŒª÷√∑¥£¨”√”⁄±Í æ“ª∏ˆ ¬º˛ «∑Òπ˝∆⁄
     rev->instance = !instance;
     wev->instance = !instance;
 
     rev->index = NGX_INVALID_INDEX;
     wev->index = NGX_INVALID_INDEX;
 
-	//∂¡–¥ ¬º˛µƒdata∂º÷∏ªÿ¡¨Ω”±æ…Ì
+    //∂¡–¥ ¬º˛µƒdata∂º÷∏ªÿ¡¨Ω”±æ…Ì
     rev->data = c;
     wev->data = c;
 
@@ -1026,7 +1026,7 @@ ngx_reusable_connection(ngx_connection_t *c, ngx_uint_t reusable)
     ngx_log_debug1(NGX_LOG_DEBUG_CORE, c->log, 0,
                    "reusable connection: %ui", reusable);
 
-	// “ªµ©“ª∏ˆkeepaliveµƒ¡¨Ω”’˝≥£¥¶¿Ì¡À£¨æÕΩ´∆‰¥”reusable∂”¡–÷–“∆≥˝ 
+    // “ªµ©“ª∏ˆkeepaliveµƒ¡¨Ω”’˝≥£¥¶¿Ì¡À£¨æÕΩ´∆‰¥”reusable∂”¡–÷–“∆≥˝ 
     if (c->reusable) {
         ngx_queue_remove(&c->queue);
 
@@ -1035,14 +1035,14 @@ ngx_reusable_connection(ngx_connection_t *c, ngx_uint_t reusable)
 #endif
     }
 
-	// ‘⁄ngx_http_set_keepalive÷–ª·Ω´reusable÷√Œ™1£¨reusableŒ™1µƒ÷±Ω”–ßπ˚£¨æÕ «Ω´∏√¡¨Ω”≤ÂµΩreusable_connections_queue÷–
+    // ‘⁄ngx_http_set_keepalive÷–ª·Ω´reusable÷√Œ™1£¨reusableŒ™1µƒ÷±Ω”–ßπ˚£¨æÕ «Ω´∏√¡¨Ω”≤ÂµΩreusable_connections_queue÷–
     c->reusable = reusable;
 
-	// µ±reusableŒ™0 ±£¨“‚Œ∂◊≈∏√keepalive±ª’˝≥£µƒ¥¶¿ÌµÙ¡À£¨≤ª”¶∏√±ª‘Ÿ¥ŒÃÌº”µΩreusable∂”¡–÷–¡À°£ 
+    // µ±reusableŒ™0 ±£¨“‚Œ∂◊≈∏√keepalive±ª’˝≥£µƒ¥¶¿ÌµÙ¡À£¨≤ª”¶∏√±ª‘Ÿ¥ŒÃÌº”µΩreusable∂”¡–÷–¡À°£ 
     if (reusable) {
         /* need cast as ngx_cycle is volatile */
 
-		// ’‚¿Ô π”√Õ∑≤Â∑®£¨Ωœ–¬µƒ¡¨Ω”øøΩ¸Õ∑≤ø£¨ ±º‰‘Ωæ√Œ¥±ª¥¶¿Ìµƒ¡¨Ω”‘ΩøøŒ≤
+        // ’‚¿Ô π”√Õ∑≤Â∑®£¨Ωœ–¬µƒ¡¨Ω”øøΩ¸Õ∑≤ø£¨ ±º‰‘Ωæ√Œ¥±ª¥¶¿Ìµƒ¡¨Ω”‘ΩøøŒ≤
         ngx_queue_insert_head(
             (ngx_queue_t *) &ngx_cycle->reusable_connections_queue, &c->queue);
 
@@ -1061,13 +1061,13 @@ ngx_drain_connections(void)
     ngx_queue_t       *q;
     ngx_connection_t  *c;
 
-	// «Â¿Ì32∏ˆkeepalive¡¨Ω”£¨“‘≥¢ ‘ªÿ ’“ª–©¡¨Ω”≥ÿπ©–¬¡¨Ω” π”√ 
+    // «Â¿Ì32∏ˆkeepalive¡¨Ω”£¨“‘≥¢ ‘ªÿ ’“ª–©¡¨Ω”≥ÿπ©–¬¡¨Ω” π”√ 
     for (i = 0; i < 32; i++) {
         if (ngx_queue_empty(&ngx_cycle->reusable_connections_queue)) { //ø…÷ÿ”√¡¨Ω”µƒ¡¥±ÌŒ™ø’
             break;
         }
 
-		// reusable¡¨Ω”∂”¡– «¥”Õ∑≤Â»Îµƒ£¨“‚Œ∂◊≈‘ΩøøΩ¸∂”¡–Œ≤≤øµƒ¡¨Ω”£¨ø’œ–Œ¥±ª
+        // reusable¡¨Ω”∂”¡– «¥”Õ∑≤Â»Îµƒ£¨“‚Œ∂◊≈‘ΩøøΩ¸∂”¡–Œ≤≤øµƒ¡¨Ω”£¨ø’œ–Œ¥±ª
         //  π”√µƒ ±º‰æÕ‘Ω≥§£¨’‚÷÷«Èøˆœ¬£¨”≈œ»ªÿ ’À¸£¨¿‡À∆LRU
         q = ngx_queue_last(&ngx_cycle->reusable_connections_queue);
         c = ngx_queue_data(q, ngx_connection_t, queue);
@@ -1075,7 +1075,7 @@ ngx_drain_connections(void)
         ngx_log_debug0(NGX_LOG_DEBUG_CORE, c->log, 0,
                        "reusing connection");
 
-		// ’‚¿Ôµƒhandler «ngx_http_keepalive_handler£¨’‚∫Ø ˝¿Ô£¨”…”⁄close±ª÷√1£¨  
+        // ’‚¿Ôµƒhandler «ngx_http_keepalive_handler£¨’‚∫Ø ˝¿Ô£¨”…”⁄close±ª÷√1£¨  
         // À˘“‘ª·÷¥––ngx_http_close_connection¿¥ Õ∑≈¡¨Ω”£¨’‚—˘“≤æÕ∑¢…˙¡Àkeepalive  
         // ¡¨Ω”±ª«ø÷∆∂œµÙµƒœ÷œÛ¡À°£
         c->close = 1; //πÿ±’¡À

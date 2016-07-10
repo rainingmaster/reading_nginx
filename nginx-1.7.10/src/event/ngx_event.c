@@ -222,8 +222,8 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
 #endif
     }
 
-	/*ngx_use_accept_mutex表示是否需要,通过对accept加锁来解决惊群问题，即防止多个worker同时listen链接，导致一个请求进来所有worker都惊醒了。
-	当使用了master模式，nginx worker进程数>1时且配置文件中打开accept_mutex时，这个标志置为1  
+    /*ngx_use_accept_mutex表示是否需要,通过对accept加锁来解决惊群问题，即防止多个worker同时listen链接，导致一个请求进来所有worker都惊醒了。
+    当使用了master模式，nginx worker进程数>1时且配置文件中打开accept_mutex时，这个标志置为1  
     它在函数ngx_event_process_init中被设置，源代码为： 
     if (ccf->master && ccf->worker_processes > 1 && ecf->accept_mutex) { 
         ngx_use_accept_mutex = 1; 
@@ -234,29 +234,29 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
         ngx_use_accept_mutex = 0; 
     }*/
     if (ngx_use_accept_mutex) {
-		//负载均衡处理
-		//在src/event/nginx_event_accept.c:ngx_event_accept()中计算：ngx_accept_disabled = ngx_cycle->connection_n / 8 - ngx_cycle->free_connection_n;   初始值为0，以后每来新建一个连接，都会更新一下值。
-		//当剩余连接数小于最大连接数的1/8的时候为正，表示连接有点多了，于是放弃一次争锁定机会
+        //负载均衡处理
+        //在src/event/nginx_event_accept.c:ngx_event_accept()中计算：ngx_accept_disabled = ngx_cycle->connection_n / 8 - ngx_cycle->free_connection_n;   初始值为0，以后每来新建一个连接，都会更新一下值。
+        //当剩余连接数小于最大连接数的1/8的时候为正，表示连接有点多了，于是放弃一次争锁定机会
         if (ngx_accept_disabled > 0) {
             ngx_accept_disabled--;
 
         } else {
-        	//这里ngx_trylock_accept_mutex函数就是争锁定函数，成功争得了锁则将全局变量ngx_accept_mutex_held置为1，否则置0 
+            //这里ngx_trylock_accept_mutex函数就是争锁定函数，成功争得了锁则将全局变量ngx_accept_mutex_held置为1，否则置0 
             if (ngx_trylock_accept_mutex(cycle) == NGX_ERROR) {
                 return;
             }
 
-			//拿到锁
+            //拿到锁
             if (ngx_accept_mutex_held) {
-				/* 
-				   1. 给flags增加标记NGX_POST_EVENTS，这个标记作为处理时间核心函数ngx_process_events的一个参数，这个函数中所有事件将延后处理。
-				会把accept事件都放到ngx_posted_accept_events链表中，epollin|epollout普通事件都放到ngx_posted_events链表中
-				   2. 占用了accept锁的进程在处理事件的时候是先将事件放入队列，后续慢慢处理，以便尽快走到下面释放锁。
-				*/
+                /* 
+                   1. 给flags增加标记NGX_POST_EVENTS，这个标记作为处理时间核心函数ngx_process_events的一个参数，这个函数中所有事件将延后处理。
+                会把accept事件都放到ngx_posted_accept_events链表中，epollin|epollout普通事件都放到ngx_posted_events链表中
+                   2. 占用了accept锁的进程在处理事件的时候是先将事件放入队列，后续慢慢处理，以便尽快走到下面释放锁。
+                */
                 flags |= NGX_POST_EVENTS;
 
             } else {
-            	/*获取锁失败，意味着既不能让当前worker进程频繁的试图抢锁，也不能让它经过太长事件再去抢锁 
+                /*获取锁失败，意味着既不能让当前worker进程频繁的试图抢锁，也不能让它经过太长事件再去抢锁 
                 下面的代码：即使开启了timer_resolution时间精度，牙需要让ngx_process_change方法在没有新事件的时候至少等待ngx_accept_mutex_delay毫秒之后再去试图抢锁 
                 而没有开启时间精度时，如果最近一个定时器事件的超时时间距离现在超过了ngx_accept_mutex_delay毫秒，也要把timer设置为ngx_accept_mutex_delay毫秒，这是因为当前进程虽然没有抢到accept_mutex锁，但也不能让ngx_process_change方法在没有新事件的时候等待的时间超过ngx_accept_mutex_delay，这会影响整个负载均衡机制*/
                 if (timer == NGX_TIMER_INFINITE
@@ -268,7 +268,7 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
         }
     }
 
-	//计算ngx_process_events消耗的时间
+    //计算ngx_process_events消耗的时间
     delta = ngx_current_msec;
 
     (void) ngx_process_events(cycle, timer, flags); //此flags下面所有事件都会加入到ngx_posted_*_event链表中，延后处理
@@ -280,17 +280,17 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
 
     ngx_event_process_posted(cycle, &ngx_posted_accept_events); //根据上面获取到的队列，处理ngx_posted_accept_events
 
-	//如果刚刚加上了accept的防惊群锁，则解锁
+    //如果刚刚加上了accept的防惊群锁，则解锁
     if (ngx_accept_mutex_held) {
         ngx_shmtx_unlock(&ngx_accept_mutex);
     }
 
-	//如果ngx_process_events消耗的时间大于0，那么这是可能有新的定时器事件触发 
+    //如果ngx_process_events消耗的时间大于0，那么这是可能有新的定时器事件触发 
     if (delta) {
         ngx_event_expire_timers();
     }
 
-	//ngx_posted_events链表中有数据，进行处理
+    //ngx_posted_events链表中有数据，进行处理
     ngx_event_process_posted(cycle, &ngx_posted_events); //根据上面获取到的队列，处理ngx_posted_events
 }
 
@@ -614,7 +614,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
     ecf = ngx_event_get_conf(cycle->conf_ctx, ngx_event_core_module);
 
-	//如果是使用master-worker模式且worker数多于1且需要使用accept互斥锁--用于防止惊群
+    //如果是使用master-worker模式且worker数多于1且需要使用accept互斥锁--用于防止惊群
     if (ccf->master && ccf->worker_processes > 1 && ecf->accept_mutex) {
         ngx_use_accept_mutex = 1;
         ngx_accept_mutex_held = 0;
@@ -635,7 +635,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 
 #endif
 
-	//初始化链表
+    //初始化链表
     ngx_queue_init(&ngx_posted_accept_events);
     ngx_queue_init(&ngx_posted_events);
 
@@ -643,7 +643,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         return NGX_ERROR;
     }
 
-	//初始化所有NGX_EVENT_MODULE的module，类似于其他模块
+    //初始化所有NGX_EVENT_MODULE的module，类似于其他模块
     for (m = 0; ngx_modules[m]; m++) {
         if (ngx_modules[m]->type != NGX_EVENT_MODULE) {
             continue;
@@ -700,7 +700,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         }
 
 
-		//初始化文件空间和文件数
+        //初始化文件空间和文件数
         cycle->files_n = (ngx_uint_t) rlmt.rlim_cur;
 
         cycle->files = ngx_calloc(sizeof(ngx_connection_t *) * cycle->files_n,
@@ -712,7 +712,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 
 #endif
 
-	//初始化连接池
+    //初始化连接池
     cycle->connections =
         ngx_alloc(sizeof(ngx_connection_t) * cycle->connection_n, cycle->log);
     if (cycle->connections == NULL) {
@@ -721,7 +721,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 
     c = cycle->connections;
 
-	//初始化读事件
+    //初始化读事件
     cycle->read_events = ngx_alloc(sizeof(ngx_event_t) * cycle->connection_n,
                                    cycle->log);
     if (cycle->read_events == NULL) {
@@ -734,7 +734,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         rev[i].instance = 1;
     }
 
-	//初始化写事件
+    //初始化写事件
     cycle->write_events = ngx_alloc(sizeof(ngx_event_t) * cycle->connection_n,
                                     cycle->log);
     if (cycle->write_events == NULL) {
@@ -749,9 +749,9 @@ ngx_event_process_init(ngx_cycle_t *cycle)
     i = cycle->connection_n;
     next = NULL;
 
-	//c = cycle->connections
-	//将cycle->connections组件成链表，形成连接池
-	//从后往前链接
+    //c = cycle->connections
+    //将cycle->connections组件成链表，形成连接池
+    //从后往前链接
     do {
         i--;
 

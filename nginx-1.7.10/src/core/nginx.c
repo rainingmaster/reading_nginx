@@ -4,11 +4,11 @@
  * Copyright (C) Nginx, Inc.
  */
 
-
+    
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include <nginx.h>
-
+    
 
 static ngx_int_t ngx_add_inherited_sockets(ngx_cycle_t *cycle);
 static ngx_int_t ngx_get_options(int argc, char *const *argv);
@@ -213,7 +213,7 @@ main(int argc, char *const *argv)
         return 1;
     }
 
-	/* 读取配置，并给各个下面用到的全局变量赋值*/
+    /* 读取配置，并给各个下面用到的全局变量赋值*/
     if (ngx_get_options(argc, argv) != NGX_OK) {
         return 1;
     }
@@ -294,7 +294,7 @@ main(int argc, char *const *argv)
      * ngx_process_options()
      */
 
-	/* init_cycle即为初次建立时使用的循环，后面又会建立新的循环。这个循环可以理解为后面master/worker循环的上下文所有内容 */
+    /* init_cycle即为初次建立时使用的循环，后面又会建立新的循环。这个循环可以理解为后面master/worker循环的上下文所有内容 */
     ngx_memzero(&init_cycle, sizeof(ngx_cycle_t));
     init_cycle.log = log;
     ngx_cycle = &init_cycle;
@@ -328,7 +328,7 @@ main(int argc, char *const *argv)
         return 1;
     }
 
-	/* 给各个modole定下索引 */
+    /* 给各个modole定下索引 */
     ngx_max_module = 0;
     for (i = 0; ngx_modules[i]; i++) {
         ngx_modules[i]->index = ngx_max_module++;

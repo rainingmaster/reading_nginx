@@ -458,7 +458,7 @@ ngx_http_access_init(ngx_conf_t *cf)
 
     cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
 
-	//在phases[NGX_HTTP_ACCESS_PHASE]中加入一个方法:ngx_http_access_handler
+    //在phases[NGX_HTTP_ACCESS_PHASE]中加入一个方法:ngx_http_access_handler
     h = ngx_array_push(&cmcf->phases[NGX_HTTP_ACCESS_PHASE].handlers);
     if (h == NULL) {
         return NGX_ERROR;
