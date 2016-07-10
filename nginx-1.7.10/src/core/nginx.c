@@ -32,6 +32,7 @@ static ngx_conf_enum_t  ngx_debug_points[] = {
 };
 
 /* 核心模块的命令，基本用在master部分 */
+/* 其他模块使用对应的ngx_command_t命令 */
 static ngx_command_t  ngx_core_commands[] = {
 
     { ngx_string("daemon"),
