@@ -280,14 +280,14 @@ typedef struct {
 typedef void (*ngx_http_client_body_handler_pt)(ngx_http_request_t *r);
 
 typedef struct {
-    ngx_temp_file_t                  *temp_file;
-    ngx_chain_t                      *bufs;
-    ngx_buf_t                        *buf;
-    off_t                             rest;
+    ngx_temp_file_t                  *temp_file; /*指向储存请求体的临时文件的指针*/
+    ngx_chain_t                      *bufs; /*消息体都保存在这个chain里面,指向保存请求体的链表头*/
+    ngx_buf_t                        *buf;  /*指向当前用于保存请求体的内存缓存，用作临时存储的buf，在ngx_http_read_client_request_body和ngx_http_do_read_client_request_body中用得到*/
+    off_t                             rest; /*当前剩余的请求体大小*/
     ngx_chain_t                      *free;
     ngx_chain_t                      *busy;
     ngx_http_chunked_t               *chunked;
-    ngx_http_client_body_handler_pt   post_handler;
+    ngx_http_client_body_handler_pt   post_handler; /*保存传给ngx_http_read_client_request_body()函数的回调函数*/
 } ngx_http_request_body_t;
 
 

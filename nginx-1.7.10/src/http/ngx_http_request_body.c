@@ -29,6 +29,7 @@ static ngx_int_t ngx_http_request_body_save_filter(ngx_http_request_t *r,
     ngx_chain_t *in);
 
 
+//读取请求体request_body内容
 ngx_int_t
 ngx_http_read_client_request_body(ngx_http_request_t *r,
     ngx_http_client_body_handler_pt post_handler)
@@ -41,7 +42,7 @@ ngx_http_read_client_request_body(ngx_http_request_t *r,
     ngx_http_request_body_t   *rb;
     ngx_http_core_loc_conf_t  *clcf;
 
-    r->main->count++;
+    r->main->count++; //引用加1，在ngx_http_finalize_request中会引用减一
 
 #if (NGX_HTTP_SPDY)
     if (r->spdy_stream && r == r->main) {
@@ -50,11 +51,13 @@ ngx_http_read_client_request_body(ngx_http_request_t *r,
     }
 #endif
 
+    //检查该请求的请求体为子请求或已经被读取或者被丢弃请求体
     if (r != r->main || r->request_body || r->discard_body) {
         post_handler(r);
         return NGX_OK;
     }
 
+    //检查客户端是否发送了Expect: 100-continue头
     if (ngx_http_test_expect(r) != NGX_OK) {
         rc = NGX_HTTP_INTERNAL_SERVER_ERROR;
         goto done;
@@ -81,7 +84,9 @@ ngx_http_read_client_request_body(ngx_http_request_t *r,
 
     r->request_body = rb;
 
+    //是否带有content_length头，如果没有该头或者客户端发送了一个值为0的content_length头，表明没有请求体
     if (r->headers_in.content_length_n < 0 && !r->headers_in.chunked) {
+        //调用回调函数并返回NGX_OK
         post_handler(r);
         return NGX_OK;
     }
@@ -781,6 +786,7 @@ ngx_http_discard_request_body_filter(ngx_http_request_t *r, ngx_buf_t *b)
 }
 
 
+//根据http 1.1协议，客户端可以发送一个Expect头来向服务器表明期望发送请求体，服务器如果允许客户端发送请求体，则会回复”HTTP/1.1 100 Continue”，客户端收到时，才会开始发送请求体。
 static ngx_int_t
 ngx_http_test_expect(ngx_http_request_t *r)
 {
@@ -798,6 +804,7 @@ ngx_http_test_expect(ngx_http_request_t *r)
 
     expect = &r->headers_in.expect->value;
 
+    //检查客户端是否发送了Expect: 100-continue头
     if (expect->len != sizeof("100-continue") - 1
         || ngx_strncasecmp(expect->data, (u_char *) "100-continue",
                            sizeof("100-continue") - 1)
@@ -809,6 +816,7 @@ ngx_http_test_expect(ngx_http_request_t *r)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "send 100 Continue");
 
+    //给客户端回复”HTTP/1.1 100 Continue”,客户端收到时，才会开始发送请求体。
     n = r->connection->send(r->connection,
                             (u_char *) "HTTP/1.1 100 Continue" CRLF CRLF,
                             sizeof("HTTP/1.1 100 Continue" CRLF CRLF) - 1);

@@ -911,7 +911,12 @@ ngx_http_ssl_servername(ngx_ssl_conn_t *ssl_conn, int *ad, void *arg)
 #endif
 
 
-/* 处理请求行 */
+/* 处理请求行
+ * 请求行格式为Method Request-URI HTTP-Version CRLF 
+ * 其中 Method表示请求方法；Request-URI是一个统一资源标识符；HTTP-Version表示请求的HTTP协议版本；
+ * CRLF表示回车和换行（除了作为结尾的CRLF外，不允许出现单独的CR或LF字符）。
+ * eg:GET /form.html HTTP/1.1 (CRLF)
+ */
 static void
 ngx_http_process_request_line(ngx_event_t *rev)
 {
