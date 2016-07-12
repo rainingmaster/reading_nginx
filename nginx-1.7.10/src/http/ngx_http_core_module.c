@@ -838,6 +838,7 @@ ngx_module_t  ngx_http_core_module = {
 ngx_str_t  ngx_http_core_get_method = { 3, (u_char *) "GET " };
 
 
+/* http处理函数，处理完请求头后进入 */
 void
 ngx_http_handler(ngx_http_request_t *r)
 {
@@ -878,6 +879,7 @@ ngx_http_handler(ngx_http_request_t *r)
     r->gzip_vary = 0;
 #endif
 
+    //请求处理函数
     r->write_event_handler = ngx_http_core_run_phases;
     ngx_http_core_run_phases(r);
 }
@@ -921,7 +923,7 @@ ngx_http_core_generic_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
     rc = ph->handler(r);
 
     if (rc == NGX_OK) {
-        r->phase_handler = ph->next;
+        r->phase_handler = ph->next; //下个阶段走到next中
         return NGX_AGAIN;
     }
 

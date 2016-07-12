@@ -2306,6 +2306,7 @@ ngx_http_post_request(ngx_http_request_t *r, ngx_http_posted_request_t *pr)
 }
 
 
+/* ÕÍ≥…«Î«Û */
 void
 ngx_http_finalize_request(ngx_http_request_t *r, ngx_int_t rc)
 {
