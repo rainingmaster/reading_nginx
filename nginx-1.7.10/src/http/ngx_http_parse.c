@@ -110,7 +110,7 @@ ngx_int_t
 ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
 {
     u_char  c, ch, *p, *m;
-	//各种处理状态，用于下面分析过程中的跳转
+    //各种处理状态，用于下面分析过程中的跳转
     enum {
         sw_start = 0,
         sw_method,
@@ -871,10 +871,10 @@ ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
     hash = r->header_hash; //使用上一次的hash。默认为空
     i = r->lowcase_index; //使用上一次的小写索引位
 
-	/*
-	 * b->pos
-	 * User-Agent: curl/7.15.5 (x86_64-redhat-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8b zlib/1.2.3 libidn/0.6.5\r\nHost: kugroup.mobile.kugou.com\r\nPragma: no-cache\r\nAccept: *\/*\r\nProxy-Connection: Keep-Alive\r\n\r\n
-	 */
+    /*
+     * b->pos
+     * User-Agent: curl/7.15.5 (x86_64-redhat-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8b zlib/1.2.3 libidn/0.6.5\r\nHost: kugroup.mobile.kugou.com\r\nPragma: no-cache\r\nAccept: *\/*\r\nProxy-Connection: Keep-Alive\r\n\r\n
+     */
     for (p = b->pos; p < b->last; p++) {//反复对请求的内容进行处理啊..
         ch = *p;
 
@@ -930,7 +930,7 @@ ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
             break;
 
         /* header name */
-		//开始读请求头的名称
+        //开始读请求头的名称
         case sw_name:
             c = lowcase[ch];
 
@@ -962,7 +962,7 @@ ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
 
             if (ch == CR) {
                 r->header_name_end = p;
-				 //请求头的开始和结束点都应该在这开始算
+                 //请求头的开始和结束点都应该在这开始算
                 r->header_start = p;
                 r->header_end = p;
                 state = sw_almost_done;
@@ -971,7 +971,7 @@ ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
 
             if (ch == LF) {
                 r->header_name_end = p;
-				 //请求头的开始和结束点都应该在这开始算
+                 //请求头的开始和结束点都应该在这开始算
                 r->header_start = p;
                 r->header_end = p;
                 goto done;
@@ -996,7 +996,7 @@ ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
             break;
 
         /* space* before header value */
-		//开始值前面的空格
+        //开始值前面的空格
         case sw_space_before_value:
             switch (ch) {
             case ' ':
@@ -1020,7 +1020,7 @@ ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
             break;
 
         /* header value */
-		//开始读请求头的值
+        //开始读请求头的值
         case sw_value:
             switch (ch) {
             case ' ':
@@ -1068,7 +1068,7 @@ ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
             }
             break;
 
-		 //返回NGX_HTTP_PARSE_INVALID_HEADER，表示请求头解析过程中遇到错误，一般为客户端发送了不符合协议规范的头部，此时nginx返回400错误；
+         //返回NGX_HTTP_PARSE_INVALID_HEADER，表示请求头解析过程中遇到错误，一般为客户端发送了不符合协议规范的头部，此时nginx返回400错误；
         /* end of header line */
         case sw_almost_done:
             switch (ch) {

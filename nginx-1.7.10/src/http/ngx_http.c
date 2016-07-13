@@ -291,7 +291,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
 
-	//初始化各个http阶段的phases数组
+    //初始化各个http阶段的phases数组
     if (ngx_http_init_phases(cf, cmcf) != NGX_OK) {
         return NGX_CONF_ERROR;
     }
@@ -308,7 +308,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
         module = ngx_modules[m]->ctx;
 
-		//调用postconfiguration的函数，实现对handler的初始化，相应的handler都会被存入相应phase[NGX_HTTP_XXX_PHASE]的handler数组中。
+        //调用postconfiguration的函数，实现对handler的初始化，相应的handler都会被存入相应phase[NGX_HTTP_XXX_PHASE]的handler数组中。
         if (module->postconfiguration) {
 
             ngx_http_probe_module_post_config(ngx_modules[m]);
@@ -331,7 +331,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     *cf = pcf;
 
 
-	//初始化各个http阶段的phases中的hanler方法
+    //初始化各个http阶段的phases中的hanler方法
     if (ngx_http_init_phase_handlers(cf, cmcf) != NGX_OK) {
         return NGX_CONF_ERROR;
     }
@@ -473,7 +473,7 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
         n += cmcf->phases[i].handlers.nelts; //算出所有handler的总量
     }
 
-	//申请一个所有handler放在一起的数组空间
+    //申请一个所有handler放在一起的数组空间
     ph = ngx_pcalloc(cf->pool,
                      n * sizeof(ngx_http_phase_handler_t) + sizeof(void *));
     if (ph == NULL) {
@@ -483,10 +483,10 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
     cmcf->phase_engine.handlers = ph;
     n = 0;
 
-	/* 所有htt阶段 */
+    /* 所有htt阶段 */
     for (i = 0; i < NGX_HTTP_LOG_PHASE; i++) {
         h = cmcf->phases[i].handlers.elts;
-		/* 按照原来的http执行顺序处理 */
+        /* 按照原来的http执行顺序处理 */
         switch (i) {
 
         case NGX_HTTP_SERVER_REWRITE_PHASE:
@@ -1767,7 +1767,7 @@ ngx_http_add_listening(ngx_conf_t *cf, ngx_http_conf_addr_t *addr)
     ngx_http_core_loc_conf_t  *clcf;
     ngx_http_core_srv_conf_t  *cscf;
 
-	//创建一个与之交互信息的ngx_listening_t，里面包含监听的套接字
+    //创建一个与之交互信息的ngx_listening_t，里面包含监听的套接字
     ls = ngx_create_listening(cf, &addr->opt.u.sockaddr, addr->opt.socklen);
     if (ls == NULL) {
         return NULL;
@@ -1775,7 +1775,7 @@ ngx_http_add_listening(ngx_conf_t *cf, ngx_http_conf_addr_t *addr)
 
     ls->addr_ntop = 1;
 
-	//处理器为初始化http连接
+    //处理器为初始化http连接
     ls->handler = ngx_http_init_connection;
 
     cscf = addr->default_server;

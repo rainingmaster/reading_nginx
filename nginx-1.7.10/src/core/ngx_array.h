@@ -14,19 +14,19 @@
 
 
 typedef struct {
-	/* 数组起始指针 */
+    /* 数组起始指针 */
     void        *elts;
 
-	/* 数组当前长度 */
+    /* 数组当前长度 */
     ngx_uint_t   nelts;
 
-	/* 数组中单个元素的大小 */
+    /* 数组中单个元素的大小 */
     size_t       size;
 
-	/* 数组容量 */
+    /* 数组容量 */
     ngx_uint_t   nalloc;
 
-	/* 数组所占用的内存池指针 */
+    /* 数组所占用的内存池指针 */
     ngx_pool_t  *pool;
 } ngx_array_t;
 

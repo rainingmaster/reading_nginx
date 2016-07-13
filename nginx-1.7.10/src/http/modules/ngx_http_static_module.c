@@ -45,6 +45,7 @@ ngx_module_t  ngx_http_static_module = {
 };
 
 
+/* 静态请求处理方法,也是内容处理最后一步 */
 static ngx_int_t
 ngx_http_static_handler(ngx_http_request_t *r)
 {
@@ -112,7 +113,7 @@ ngx_http_static_handler(ngx_http_request_t *r)
         case NGX_ENAMETOOLONG:
 
             level = NGX_LOG_ERR;
-            rc = NGX_HTTP_NOT_FOUND;
+            rc = NGX_HTTP_NOT_FOUND; //找不到文件，返回404
             break;
 
         case NGX_EACCES:

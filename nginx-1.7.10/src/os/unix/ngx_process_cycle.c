@@ -137,7 +137,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
 
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
 
-	/* 将使用fork建立多个worker */
+    /* 将使用fork建立多个worker */
     ngx_start_worker_processes(cycle, ccf->worker_processes,
                                NGX_PROCESS_RESPAWN);
     ngx_start_cache_manager_processes(cycle, 0);
@@ -147,7 +147,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
     sigio = 0;
     live = 1;
 
-	/* master的死循环，主要处理各种信号 */
+    /* master的死循环，主要处理各种信号 */
     for ( ;; ) {
         if (delay) {
             if (ngx_sigalrm) {
@@ -757,7 +757,7 @@ ngx_worker_process_cycle(ngx_cycle_t *cycle, void *data)
 
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
 
-	//多进程，在linux下面没有
+    //多进程，在linux下面没有
     if (ngx_threads_n) {
         if (ngx_init_threads(ngx_threads_n, ccf->thread_stack_size, cycle)
             == NGX_ERROR)
@@ -796,7 +796,7 @@ ngx_worker_process_cycle(ngx_cycle_t *cycle, void *data)
     }
 #endif
 
-	//worker死循环
+    //worker死循环
     for ( ;; ) {
 
         if (ngx_exiting) {
@@ -825,7 +825,7 @@ ngx_worker_process_cycle(ngx_cycle_t *cycle, void *data)
 
         ngx_log_debug0(NGX_LOG_DEBUG_EVENT, cycle->log, 0, "worker cycle");
 
-		//处理各种事件和定时器
+        //处理各种事件和定时器
         ngx_process_events_and_timers(cycle);
 
         if (ngx_terminate) {
