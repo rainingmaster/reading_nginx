@@ -21,17 +21,18 @@ typedef struct {
 } ngx_http_conf_ctx_t;
 
 
+//调用用于构建各项配置，用于ngx_http_block
 typedef struct {
     ngx_int_t   (*preconfiguration)(ngx_conf_t *cf);
     ngx_int_t   (*postconfiguration)(ngx_conf_t *cf);
 
-    void       *(*create_main_conf)(ngx_conf_t *cf);
+    void       *(*create_main_conf)(ngx_conf_t *cf); //创建main级配置
     char       *(*init_main_conf)(ngx_conf_t *cf, void *conf);
 
-    void       *(*create_srv_conf)(ngx_conf_t *cf);
+    void       *(*create_srv_conf)(ngx_conf_t *cf); //创建srv级配置
     char       *(*merge_srv_conf)(ngx_conf_t *cf, void *prev, void *conf);
 
-    void       *(*create_loc_conf)(ngx_conf_t *cf);
+    void       *(*create_loc_conf)(ngx_conf_t *cf); //创建loc级配置
     char       *(*merge_loc_conf)(ngx_conf_t *cf, void *prev, void *conf);
 } ngx_http_module_t;
 

@@ -89,7 +89,7 @@ ngx_array_push(ngx_array_t *a)
     elt = (u_char *) a->elts + a->size * a->nelts;//新模块地址=数组起始指针elts+结构体大小size*数组之前长度
     a->nelts++;//数组长度加1
 
-    return elt;
+    return elt; //返回新元素的地址
 }
 
 

@@ -545,6 +545,7 @@ ngx_http_create_request(ngx_connection_t *c)
     r->signature = NGX_HTTP_MODULE;
     r->connection = c;
 
+    //将ngx_http_block中创建的main、srv、loc各级配置的值赋予到本次request中
     r->main_conf = hc->conf_ctx->main_conf;
     r->srv_conf = hc->conf_ctx->srv_conf;
     r->loc_conf = hc->conf_ctx->loc_conf;

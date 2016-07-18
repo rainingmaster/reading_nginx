@@ -95,6 +95,7 @@ static ngx_command_t  ngx_http_commands[] = {
 
 static ngx_core_module_t  ngx_http_module_ctx = {
     ngx_string("http"),
+     //没有在此处建立creat_conf/init_conf，而是在ngx_http_block中建立一系列main、svr、loc的conf
     NULL,
     NULL
 };
@@ -116,6 +117,9 @@ ngx_module_t  ngx_http_module = {
 };
 
 
+/*
+ * 在ngx_conf_handler中调用
+ */
 static char *
 ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -129,13 +133,13 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_http_core_main_conf_t   *cmcf;
 
     /* the main http context */
-
+    //此ctx为http本身的ctx，cf中带的ctx后台被替换了，那么这个htt的ctx保存在哪里??????????
     ctx = ngx_pcalloc(cf->pool, sizeof(ngx_http_conf_ctx_t));
     if (ctx == NULL) {
         return NGX_CONF_ERROR;
     }
 
-    *(ngx_http_conf_ctx_t **) conf = ctx;
+    *(ngx_http_conf_ctx_t **) conf = ctx; //带回给上一级ngx_conf_handler，将存在cycle->conf_ctx中
 
 
     /* count the number of the http modules and set up their indices */
@@ -248,6 +252,12 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
      * and its location{}s' loc_conf's
      */
 
+    /*
+     * 此ctx上下文为本函数新new的http模块的上下文。
+     * 此处即取ngx_http_core_module的create_main_conf方法的返回值，
+     * 即ngx_http_core_create_main_conf(cf)返回值
+     * 仅仅申请一些空间和初始化变量
+     */
     cmcf = ctx->main_conf[ngx_http_core_module.ctx_index];
     cscfp = cmcf->servers.elts;
 
@@ -262,7 +272,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         /* init http{} main_conf's */
 
         if (module->init_main_conf) {
-            rv = module->init_main_conf(cf, ctx->main_conf[mi]);
+            rv = module->init_main_conf(cf, ctx->main_conf[mi]); //第二个参数为对应模块create_main_conf方法返回值
             if (rv != NGX_CONF_OK) {
                 goto failed;
             }
@@ -296,6 +306,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
+    //建立与请求头相关的哈希表
     if (ngx_http_init_headers_in_hash(cf, cmcf) != NGX_OK) {
         return NGX_CONF_ERROR;
     }
@@ -311,6 +322,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         //调用postconfiguration的函数，实现对handler的初始化，相应的handler都会被存入相应phase[NGX_HTTP_XXX_PHASE]的handler数组中。
         if (module->postconfiguration) {
 
+            //执行conf后置函数阶段的探针
             ngx_http_probe_module_post_config(ngx_modules[m]);
 
             if (module->postconfiguration(cf) != NGX_OK) {
@@ -353,7 +365,9 @@ failed:
 }
 
 
-/* 建立各个模块的handler数组 */
+/* 建立各个模块的handler数组
+ * 设定的位置都是估计的位置，之后push会增加空间
+ */
 static ngx_int_t
 ngx_http_init_phases(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 {
@@ -461,6 +475,9 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
     ngx_http_phase_handler_t   *ph;
     ngx_http_phase_handler_pt   checker;
 
+    //cmcf为ngx_http_core_create_main_conf(cf)的返回值
+
+    //设置为 "未设置值"    
     cmcf->phase_engine.server_rewrite_index = (ngx_uint_t) -1;
     cmcf->phase_engine.location_rewrite_index = (ngx_uint_t) -1;
     find_config_index = 0;
@@ -485,7 +502,10 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 
     /* 所有htt阶段 */
     for (i = 0; i < NGX_HTTP_LOG_PHASE; i++) {
-        h = cmcf->phases[i].handlers.elts;
+        h = cmcf->phases[i].handlers.elts; //会在NGX_HTTP_MODULE的postconfiguration函数中填充
+        
+        //使用break将跳出本switch但仍将执行for循环的剩余语句；
+        //使用continue则直接跳至i++进行下一次for循环执行；
         /* 按照原来的http执行顺序处理 */
         switch (i) {
 
@@ -555,12 +575,13 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
             checker = ngx_http_core_generic_phase;
         }
 
-        n += cmcf->phases[i].handlers.nelts;
+        //nelts为此phases的handlers数量，加上后即跳到下一个阶段
+        n += cmcf->phases[i].handlers.nelts; //跳到下一个阶段phases的第一个handlers
 
         for (j = cmcf->phases[i].handlers.nelts - 1; j >=0; j--) {
             ph->checker = checker;
-            ph->handler = h[j];
-            ph->next = n;
+            ph->handler = h[j]; //指向cmcf->phases[i].handlers.elts，从后往前填充
+            ph->next = n; //下一个阶段phases中第一个handlers的索引，本ph的都固定
             ph++;
         }
     }
