@@ -962,6 +962,7 @@ ngx_http_process_request_line(ngx_event_t *rev)
 
             /* the request line has been parsed successfully */
 
+            //请求请求行信息
             r->request_line.len = r->request_end - r->request_start;
             r->request_line.data = r->request_start;
             r->request_length = r->header_in->pos - r->request_start;
@@ -969,6 +970,7 @@ ngx_http_process_request_line(ngx_event_t *rev)
             ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                            "http request line: \"%V\"", &r->request_line);
 
+            //请求方法名
             r->method_name.len = r->method_end - r->request_start + 1;
             r->method_name.data = r->request_line.data;
 
@@ -1366,6 +1368,7 @@ ngx_http_process_request_headers(ngx_event_t *rev)
                 return;
             }
 
+            //nginx请求处理
             ngx_http_process_request(r);
 
             return;

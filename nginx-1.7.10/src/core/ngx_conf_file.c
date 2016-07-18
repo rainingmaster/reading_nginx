@@ -282,6 +282,7 @@ done:
 
 /*
  * 在ngx_config_parse中调用
+ * 使用cf中的参数，调用所有ngx_command_t中的set函数
  */
 static ngx_int_t
 ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
@@ -303,7 +304,7 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
             continue;
         }
 
-        for ( /* void */ ; cmd->name.len; cmd++) {
+        for ( /* void */ ; cmd->name.len; cmd++) { //遍历module下面的各个commands
 
             if (name->len != cmd->name.len) {
                 continue;
@@ -393,6 +394,7 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
                 }
             }
 
+            //执行各个cmd的set函数，如http中的ngx_http_block
             rv = cmd->set(cf, cmd, conf);
 
             if (rv == NGX_CONF_OK) {

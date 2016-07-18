@@ -100,7 +100,10 @@ struct ngx_open_file_s {
 #define NGX_MODULE_V1_PADDING  0, 0, 0, 0, 0, 0, 0, 0
 
 struct ngx_module_s {
+    //在对应上下文模块中的索引编号
     ngx_uint_t            ctx_index;
+
+    //所有modules中的编号
     ngx_uint_t            index;
 
     ngx_uint_t            spare0;
