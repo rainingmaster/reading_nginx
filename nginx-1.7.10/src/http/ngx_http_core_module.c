@@ -848,6 +848,7 @@ ngx_http_handler(ngx_http_request_t *r)
 
     r->connection->unexpected_eof = 0;
 
+    //非内部请求
     if (!r->internal) {
         switch (r->headers_in.connection_type) {
         case 0:
@@ -896,6 +897,7 @@ ngx_http_core_run_phases(ngx_http_request_t *r)
 
     ph = cmcf->phase_engine.handlers;
 
+    /* r->phase_handler随着ph[r->phase_handler].next跳转，或者自然递增 */
     while (ph[r->phase_handler].checker) {
 
         rc = ph[r->phase_handler].checker(r, &ph[r->phase_handler]);
@@ -971,6 +973,12 @@ ngx_http_core_rewrite_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
 }
 
 
+/*
+ * 获取配置阶段
+ * 此阶段返回NGX_OK或r->phase_handler后移；
+ * next为0，不设置
+ * 无handler
+ */
 ngx_int_t
 ngx_http_core_find_config_phase(ngx_http_request_t *r,
     ngx_http_phase_handler_t *ph)
@@ -1002,6 +1010,7 @@ ngx_http_core_find_config_phase(ngx_http_request_t *r,
                    (clcf->noname ? "*" : (clcf->exact_match ? "=" : "")),
                    &clcf->name);
 
+    //更新location级配置到request中去
     ngx_http_update_location_config(r);
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -1116,6 +1125,7 @@ ngx_http_core_access_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
     ngx_int_t                  rc;
     ngx_http_core_loc_conf_t  *clcf;
 
+    //此为子请求
     if (r != r->main) {
         r->phase_handler = ph->next;
         return NGX_AGAIN;
@@ -1407,6 +1417,7 @@ ngx_http_core_try_files_phase(ngx_http_request_t *r,
 }
 
 
+//核心内容解析
 ngx_int_t
 ngx_http_core_content_phase(ngx_http_request_t *r,
     ngx_http_phase_handler_t *ph)
@@ -1417,6 +1428,9 @@ ngx_http_core_content_phase(ngx_http_request_t *r,
 
     if (r->content_handler) {
         r->write_event_handler = ngx_http_request_empty_handler;
+        /* r->content_handler在openresty中可能是ngx_http_lua_content_handler
+         * 交由内容处理模块处理，并带着返回值结束。
+         */
         ngx_http_finalize_request(r, r->content_handler(r));
         return NGX_OK;
     }
@@ -1424,6 +1438,9 @@ ngx_http_core_content_phase(ngx_http_request_t *r,
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "content phase: %ui", r->phase_handler);
 
+    /*
+     * 没有设定content_handler，则使用ngx_http_index_handler/ngx_http_autoindex_handler/ngx_http_static_handler尝试静态页面的处理
+     */
     rc = ph->handler(r);
 
     if (rc != NGX_DECLINED) {
@@ -1432,7 +1449,7 @@ ngx_http_core_content_phase(ngx_http_request_t *r,
     }
 
     /* rc == NGX_DECLINED */
-
+    /* 在下一个contetn中尝试，直到ph的最后 */
     ph++;
 
     if (ph->checker) {
@@ -1455,8 +1472,8 @@ ngx_http_core_content_phase(ngx_http_request_t *r,
 
     ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "no handler found");
 
-    ngx_http_finalize_request(r, NGX_HTTP_NOT_FOUND);
-    return NGX_OK;
+    ngx_http_finalize_request(r, NGX_HTTP_NOT_FOUND); //404
+    return NGX_OK; //处理完毕
 }
 
 
@@ -1536,6 +1553,7 @@ ngx_http_update_location_config(ngx_http_request_t *r)
         r->limit_rate = clcf->limit_rate;
     }
 
+    //将core_location_conf中的handler赋予request中的content_handler，一般此为content的最终处理函数
     if (clcf->handler) {
         r->content_handler = clcf->handler;
     }

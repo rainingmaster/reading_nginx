@@ -51,10 +51,12 @@ struct ngx_queue_s {
     (h)->next
 
 
+//最后一个节点
 #define ngx_queue_last(h)                                                     \
     (h)->prev
 
 
+//返回本身，已本身作为哨兵监控点
 #define ngx_queue_sentinel(h)                                                 \
     (h)
 

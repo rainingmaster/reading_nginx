@@ -140,6 +140,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     /* count the number of the http modules and set up their indices */
 
+    //算出http模块的数量，存在全局变量中
     ngx_http_max_module = 0;
     for (m = 0; ngx_modules[m]; m++) {
         if (ngx_modules[m]->type != NGX_HTTP_MODULE) {
@@ -163,7 +164,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
      * the http null srv_conf context, it is used to merge
      * the server{}s' srv_conf's
      */
-
+    //server级设置
     ctx->srv_conf = ngx_pcalloc(cf->pool, sizeof(void *) * ngx_http_max_module);
     if (ctx->srv_conf == NULL) {
         return NGX_CONF_ERROR;
@@ -174,7 +175,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
      * the http null loc_conf context, it is used to merge
      * the server{}s' loc_conf's
      */
-
+    //用于合并server级的local设置
     ctx->loc_conf = ngx_pcalloc(cf->pool, sizeof(void *) * ngx_http_max_module);
     if (ctx->loc_conf == NULL) {
         return NGX_CONF_ERROR;
@@ -192,7 +193,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         }
 
         module = ngx_modules[m]->ctx;
-        mi = ngx_modules[m]->ctx_index;
+        mi = ngx_modules[m]->ctx_index; //也是按照0,1,2...增加，且与module中位置对应
 
         if (module->create_main_conf) {
             ctx->main_conf[mi] = module->create_main_conf(cf);
@@ -216,9 +217,11 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         }
     }
 
+    //暂存之前的conf，后面会使用上面新生成的ctx
     pcf = *cf;
     cf->ctx = ctx;
 
+    //执行conf前置函数
     for (m = 0; ngx_modules[m]; m++) {
         if (ngx_modules[m]->type != NGX_HTTP_MODULE) {
             continue;
@@ -251,6 +254,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     cmcf = ctx->main_conf[ngx_http_core_module.ctx_index];
     cscfp = cmcf->servers.elts;
 
+    //执行conf建立函数
     for (m = 0; ngx_modules[m]; m++) {
         if (ngx_modules[m]->type != NGX_HTTP_MODULE) {
             continue;
@@ -291,7 +295,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
 
-    //初始化各个http阶段的phases数组
+    //为各个模块的handler数组申请空间
     if (ngx_http_init_phases(cf, cmcf) != NGX_OK) {
         return NGX_CONF_ERROR;
     }
@@ -301,6 +305,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
 
+    //执行conf后置函数
     for (m = 0; ngx_modules[m]; m++) {
         if (ngx_modules[m]->type != NGX_HTTP_MODULE) {
             continue;
@@ -328,10 +333,11 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
      * and in postconfiguration process
      */
 
+    //还原conf
     *cf = pcf;
 
 
-    //初始化各个http阶段的phases中的hanler方法
+    //初始化各个http阶段的phases中的hanler方法，填充之前申请的数组
     if (ngx_http_init_phase_handlers(cf, cmcf) != NGX_OK) {
         return NGX_CONF_ERROR;
     }
@@ -353,7 +359,7 @@ failed:
 }
 
 
-/* 建立各个模块的handler数组 */
+/* 为各个模块的handler数组申请空间 */
 static ngx_int_t
 ngx_http_init_phases(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 {
@@ -461,8 +467,8 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
     ngx_http_phase_handler_t   *ph;
     ngx_http_phase_handler_pt   checker;
 
-    cmcf->phase_engine.server_rewrite_index = (ngx_uint_t) -1;
-    cmcf->phase_engine.location_rewrite_index = (ngx_uint_t) -1;
+    cmcf->phase_engine.server_rewrite_index = (ngx_uint_t) -1; //设置为最大的整形
+    cmcf->phase_engine.location_rewrite_index = (ngx_uint_t) -1; //设置为最大的整形
     find_config_index = 0;
     use_rewrite = cmcf->phases[NGX_HTTP_REWRITE_PHASE].handlers.nelts ? 1 : 0;
     use_access = cmcf->phases[NGX_HTTP_ACCESS_PHASE].handlers.nelts ? 1 : 0;
@@ -473,23 +479,30 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
         n += cmcf->phases[i].handlers.nelts; //算出所有handler的总量
     }
 
-    //申请一个所有handler放在一起的数组空间
+    //申请一个ngx_http_phase_handler_t数组空间，用于存储所有的handler
     ph = ngx_pcalloc(cf->pool,
-                     n * sizeof(ngx_http_phase_handler_t) + sizeof(void *));
+                     n * sizeof(ngx_http_phase_handler_t) + sizeof(void *)); //加一个空指针，最后一个为handlers空
     if (ph == NULL) {
         return NGX_ERROR;
     }
 
+    /*
+     * 最后用于执行和跳转的结构，cmcf->phases[i].handlers.elts中所有handlers将转换成本结构的handler
+     * 由于cmcf->phases[i].handlers是个数组，因此cmcf->phase_engine.handlers中的checker会重复
+     * 有的又只有checker，而没有handler
+     * 一个二维数组，转成了一维数组
+     */
     cmcf->phase_engine.handlers = ph;
+    //赋予到ph->next中，用于一维数组的状态跳转
     n = 0;
 
-    /* 所有htt阶段 */
+    /* 除了NGX_HTTP_LOG_PHASE外所有htt阶段 */
     for (i = 0; i < NGX_HTTP_LOG_PHASE; i++) {
         h = cmcf->phases[i].handlers.elts;
         /* 按照原来的http执行顺序处理 */
         switch (i) {
-
-        case NGX_HTTP_SERVER_REWRITE_PHASE:
+        /*在cmcf->phase_engine.handlers中的起始index*/
+        /*index=0*/case NGX_HTTP_SERVER_REWRITE_PHASE: //*1
             if (cmcf->phase_engine.server_rewrite_index == (ngx_uint_t) -1) {
                 cmcf->phase_engine.server_rewrite_index = n;
             }
@@ -497,16 +510,18 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 
             break;
 
-        case NGX_HTTP_FIND_CONFIG_PHASE:
-            find_config_index = n;
+        //本阶段无cmcf->phases[2].handlers.elts方法，因此ph->handler无内容
+        /*index=2*/case NGX_HTTP_FIND_CONFIG_PHASE: //*2
+            find_config_index = n; //记录本阶段在cmcf->phase_engine.handlers中的起始位置
 
             ph->checker = ngx_http_core_find_config_phase;
-            n++;
+            /* ph->next = 0; */
+            n++; /* 即ph->next 将会多+1，会跳过本阶段的index，直接到达下阶段的index */
             ph++;
 
             continue;
 
-        case NGX_HTTP_REWRITE_PHASE:
+        /*index=3*/case NGX_HTTP_REWRITE_PHASE: //*3
             if (cmcf->phase_engine.location_rewrite_index == (ngx_uint_t) -1) {
                 cmcf->phase_engine.location_rewrite_index = n;
             }
@@ -514,22 +529,28 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 
             break;
 
-        case NGX_HTTP_POST_REWRITE_PHASE:
+        //本阶段无cmcf->phases[4].handlers.elts方法，因此ph->handler无内容
+        /*index=5*/case NGX_HTTP_POST_REWRITE_PHASE: //*4
             if (use_rewrite) {
                 ph->checker = ngx_http_core_post_rewrite_phase;
-                ph->next = find_config_index;
-                n++;
+                ph->next = find_config_index; //返回到查找config阶段
+                n++; /* 即ph->next 将会多+1，会跳过本阶段的index，直接到达下阶段的index */
                 ph++;
             }
 
             continue;
 
-        case NGX_HTTP_ACCESS_PHASE:
+        /*
+         *index=6 * case NGX_HTTP_PREACCESS_PHASE: //*5
+         *  checker = ngx_http_core_generic_phase;
+         */
+
+        /*index=8*/case NGX_HTTP_ACCESS_PHASE: //*6
             checker = ngx_http_core_access_phase;
-            n++;
+            n++; /* 即ph->next 将会多+1，会跳过本阶段的index，直接到达下阶段的index */
             break;
 
-        case NGX_HTTP_POST_ACCESS_PHASE:
+        /*index=10*/case NGX_HTTP_POST_ACCESS_PHASE: //*7
             if (use_access) {
                 ph->checker = ngx_http_core_post_access_phase;
                 ph->next = n;
@@ -538,8 +559,8 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 
             continue;
 
-        case NGX_HTTP_TRY_FILES_PHASE:
-            if (cmcf->try_files) {
+        case NGX_HTTP_TRY_FILES_PHASE: //*8
+            if (cmcf->try_files) { //try_files没有打开，不配置此项
                 ph->checker = ngx_http_core_try_files_phase;
                 n++;
                 ph++;
@@ -547,16 +568,21 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 
             continue;
 
-        case NGX_HTTP_CONTENT_PHASE:
+        /*index=11*/case NGX_HTTP_CONTENT_PHASE: //*9
             checker = ngx_http_core_content_phase;
             break;
 
-        default:
+        /*
+         * 其余阶段的都是用ngx_http_core_generic_phase一般处理方法
+         * 但是也需 cmcf->phases[i].handlers.nelts > 0 的阶段才会增加
+         */
+        default: //*0、5
             checker = ngx_http_core_generic_phase;
         }
 
         n += cmcf->phases[i].handlers.nelts;
 
+        //填充数组
         for (j = cmcf->phases[i].handlers.nelts - 1; j >=0; j--) {
             ph->checker = checker;
             ph->handler = h[j];
@@ -590,6 +616,7 @@ ngx_http_merge_servers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
 
         ctx->srv_conf = cscfp[s]->ctx->srv_conf;
 
+        //ngx_http_core_merge_srv_conf
         if (module->merge_srv_conf) {
             rv = module->merge_srv_conf(cf, saved.srv_conf[ctx_index],
                                         cscfp[s]->ctx->srv_conf[ctx_index]);
@@ -597,7 +624,7 @@ ngx_http_merge_servers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
                 goto failed;
             }
         }
-
+        
         if (module->merge_loc_conf) {
 
             /* merge the server{}'s loc_conf */
@@ -648,6 +675,7 @@ ngx_http_merge_locations(ngx_conf_t *cf, ngx_queue_t *locations,
     ctx = (ngx_http_conf_ctx_t *) cf->ctx;
     saved = *ctx;
 
+    //遍历整个双向链表
     for (q = ngx_queue_head(locations);
          q != ngx_queue_sentinel(locations);
          q = ngx_queue_next(q))
@@ -657,12 +685,14 @@ ngx_http_merge_locations(ngx_conf_t *cf, ngx_queue_t *locations,
         clcf = lq->exact ? lq->exact : lq->inclusive;
         ctx->loc_conf = clcf->loc_conf;
 
+        //ngx_http_core_merge_loc_conf
         rv = module->merge_loc_conf(cf, loc_conf[ctx_index],
                                     clcf->loc_conf[ctx_index]);
         if (rv != NGX_CONF_OK) {
             return rv;
         }
 
+        //递归
         rv = ngx_http_merge_locations(cf, clcf->locations, clcf->loc_conf,
                                       module, ctx_index);
         if (rv != NGX_CONF_OK) {
