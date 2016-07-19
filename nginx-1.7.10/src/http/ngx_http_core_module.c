@@ -1477,6 +1477,10 @@ ngx_http_core_content_phase(ngx_http_request_t *r,
 }
 
 
+/*
+ * 更新location级的conf到requrest中
+ * 在ngx_http_core_find_config_phase中会调用
+ */
 void
 ngx_http_update_location_config(ngx_http_request_t *r)
 {
@@ -3010,6 +3014,11 @@ ngx_http_get_forwarded_addr_internal(ngx_http_request_t *r, ngx_addr_t *addr,
 }
 
 
+/*
+ * 生成server级的命令预设
+ * 为server/server_name的set函数
+ * 每个server的ctx->main_conf都是ngx_http_conf_t中的main_conf，全局仅仅一个main_conf
+ */
 static char *
 ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 {
@@ -3086,7 +3095,7 @@ ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         return NGX_CONF_ERROR;
     }
 
-    *cscfp = cscf;
+    *cscfp = cscf; //ngx_http_core_srv_conf_t
 
 
     /* parse inside server{} */
@@ -3137,6 +3146,11 @@ ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 }
 
 
+/*
+ * 生成location级的命令预设
+ * 为location的set函数
+ * 每个location的ctx->main_conf都是ngx_http_conf_t中的main_conf，全局仅仅一个main_conf
+ */
 static char *
 ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 {
@@ -3180,6 +3194,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         }
     }
 
+    //core_location_conf的loc_conf为ctx->loc_conf，保留上下文
     clcf = ctx->loc_conf[ngx_http_core_module.ctx_index];
     clcf->loc_conf = ctx->loc_conf;
 
@@ -3481,6 +3496,7 @@ ngx_http_core_create_main_conf(ngx_conf_t *cf)
         return NULL;
     }
 
+    //建立初始长度为4的servers空数组
     if (ngx_array_init(&cmcf->servers, cf->pool, 4,
                        sizeof(ngx_http_core_srv_conf_t *))
         != NGX_OK)

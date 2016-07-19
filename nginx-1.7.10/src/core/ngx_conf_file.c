@@ -116,10 +116,11 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
     prev = NULL;
 #endif
 
-    if (filename) {
+    if (filename) { //首次处理，需要读取文件。读取的内容将放入cf->conf_file中
 
         /* open configuration file */
 
+        //打开文件
         fd = ngx_open_file(filename->data, NGX_FILE_RDONLY, NGX_FILE_OPEN, 0);
         if (fd == NGX_INVALID_FILE) {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, ngx_errno,
@@ -128,11 +129,11 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
             return NGX_CONF_ERROR;
         }
 
-        prev = cf->conf_file;
+        prev = cf->conf_file;//留存之前的设置
 
         cf->conf_file = &conf_file;
 
-        if (ngx_fd_info(fd, &cf->conf_file->file.info) == NGX_FILE_ERROR) {
+        if (ngx_fd_info(fd, &cf->conf_file->file.info) == NGX_FILE_ERROR) { //读取文件信息
             ngx_log_error(NGX_LOG_EMERG, cf->log, ngx_errno,
                           ngx_fd_info_n " \"%s\" failed", filename->data);
         }
@@ -144,26 +145,28 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
             goto failed;
         }
 
+        //都指向开头，没有被读过
         buf.pos = buf.start;
         buf.last = buf.start;
+        //末尾位置为申请的内存长度
         buf.end = buf.last + NGX_CONF_BUFFER;
         buf.temporary = 1;
 
-        cf->conf_file->file.fd = fd;
+        cf->conf_file->file.fd = fd; //记录文件描述符
         cf->conf_file->file.name.len = filename->len;
         cf->conf_file->file.name.data = filename->data;
         cf->conf_file->file.offset = 0;
         cf->conf_file->file.log = cf->log;
         cf->conf_file->line = 1;
 
-        type = parse_file;
+        type = parse_file; //解析文件中
 
     } else if (cf->conf_file->file.fd != NGX_INVALID_FILE) {
 
-        type = parse_block;
+        type = parse_block; //解析块中 {}
 
     } else {
-        type = parse_param;
+        type = parse_param; //解析参数中
     }
 
 
@@ -244,6 +247,7 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
         }
 
 
+        //处理该命令，存于cf->args中
         rc = ngx_conf_handler(cf, rc);
 
         if (rc == NGX_ERROR) {
@@ -269,7 +273,7 @@ done:
             rc = NGX_ERROR;
         }
 
-        cf->conf_file = prev;
+        cf->conf_file = prev; //恢复之前的设置
     }
 
     if (rc == NGX_ERROR) {
@@ -283,6 +287,7 @@ done:
 /*
  * 在ngx_config_parse中调用
  * 使用cf中的参数，调用所有ngx_command_t中的set函数
+ * 此时的cf->ctx为cycle->conf_ctx
  */
 static ngx_int_t
 ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
@@ -297,14 +302,15 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
 
     found = 0;
 
-    for (i = 0; ngx_modules[i]; i++) {
+    //暴力破解，带continue的都是没有找成功的
+    for (i = 0; ngx_modules[i]; i++) { //从所有module中找
 
         cmd = ngx_modules[i]->commands;
         if (cmd == NULL) {
             continue;
         }
 
-        for ( /* void */ ; cmd->name.len; cmd++) { //遍历module下面的各个commands
+        for ( /* void */ ; cmd->name.len; cmd++) { //该module下的，所有cmd找一遍
 
             if (name->len != cmd->name.len) {
                 continue;
@@ -394,7 +400,7 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
                 }
             }
 
-            //执行各个cmd的set函数，如http中的ngx_http_block
+            //执行对应cmd的set函数，如http中的ngx_http_block
             rv = cmd->set(cf, cmd, conf);
 
             if (rv == NGX_CONF_OK) {
@@ -464,7 +470,7 @@ ngx_conf_read_token(ngx_conf_t *cf)
 
     for ( ;; ) {
 
-        if (b->pos >= b->last) {
+        if (b->pos >= b->last) { //读取位置 > 末尾位置，仍未读完
 
             if (cf->conf_file->file.offset >= file_size) {
 
@@ -520,6 +526,7 @@ ngx_conf_read_token(ngx_conf_t *cf)
                 size = b->end - (b->start + len);
             }
 
+            //读取相应长度内容
             n = ngx_read_file(&cf->conf_file->file, b->start + len, size,
                               cf->conf_file->file.offset);
 
@@ -540,21 +547,21 @@ ngx_conf_read_token(ngx_conf_t *cf)
             start = b->start;
         }
 
-        ch = *b->pos++;
+        ch = *b->pos++; //读取位置后移
 
         if (ch == LF) {
-            cf->conf_file->line++;
+            cf->conf_file->line++; //行数+1
 
             if (sharp_comment) {
-                sharp_comment = 0;
+                sharp_comment = 0; //注释结束
             }
         }
 
-        if (sharp_comment) {
+        if (sharp_comment) { //注释行
             continue;
         }
 
-        if (quoted) {
+        if (quoted) { //冒号行
             quoted = 0;
             continue;
         }
@@ -566,11 +573,11 @@ ngx_conf_read_token(ngx_conf_t *cf)
                 continue;
             }
 
-            if (ch == ';') {
+            if (ch == ';') { //一个配置项结束
                 return NGX_OK;
             }
 
-            if (ch == '{') {
+            if (ch == '{') { //置为块开始
                 return NGX_CONF_BLOCK_START;
             }
 
@@ -590,8 +597,8 @@ ngx_conf_read_token(ngx_conf_t *cf)
                 continue;
             }
 
-            start = b->pos - 1;
-            start_line = cf->conf_file->line;
+            start = b->pos - 1; //记录起始位置
+            start_line = cf->conf_file->line; //记录起始行数
 
             switch (ch) {
 
@@ -618,7 +625,7 @@ ngx_conf_read_token(ngx_conf_t *cf)
 
                 return NGX_CONF_BLOCK_DONE;
 
-            case '#':
+            case '#': //注释标识
                 sharp_comment = 1;
                 continue;
 
@@ -627,13 +634,13 @@ ngx_conf_read_token(ngx_conf_t *cf)
                 last_space = 0;
                 continue;
 
-            case '"':
+            case '"': //双引号
                 start++;
                 d_quoted = 1;
                 last_space = 0;
                 continue;
 
-            case '\'':
+            case '\'': //单引号
                 start++;
                 s_quoted = 1;
                 last_space = 0;
@@ -643,7 +650,7 @@ ngx_conf_read_token(ngx_conf_t *cf)
                 last_space = 0;
             }
 
-        } else {
+        } else { //非最后一个空格
             if (ch == '{' && variable) {
                 continue;
             }
@@ -660,6 +667,7 @@ ngx_conf_read_token(ngx_conf_t *cf)
                 continue;
             }
 
+            //遇到单引号/双引号/空格/换行...为找到对应内容
             if (d_quoted) {
                 if (ch == '"') {
                     d_quoted = 0;
@@ -681,21 +689,23 @@ ngx_conf_read_token(ngx_conf_t *cf)
                 found = 1;
             }
 
-            if (found) {
+            if (found) { //找到对应内容!
                 word = ngx_array_push(cf->args);
                 if (word == NULL) {
                     return NGX_ERROR;
                 }
 
-                word->data = ngx_pnalloc(cf->pool, b->pos - start + 1);
+                word->data = ngx_pnalloc(cf->pool, b->pos - start + 1); //申请对应内存，读取位置到开始位置
                 if (word->data == NULL) {
                     return NGX_ERROR;
                 }
 
+                 //拷贝内容
                 for (dst = word->data, src = start, len = 0;
                      src < b->pos - 1;
                      len++)
                 {
+                    //跳过空行，空格等
                     if (*src == '\\') {
                         switch (src[1]) {
                         case '"':
@@ -721,9 +731,9 @@ ngx_conf_read_token(ngx_conf_t *cf)
                         }
 
                     }
-                    *dst++ = *src++;
+                    *dst++ = *src++; //拷贝内容
                 }
-                *dst = '\0';
+                *dst = '\0'; //结束符
                 word->len = len;
 
                 if (ch == ';') {
