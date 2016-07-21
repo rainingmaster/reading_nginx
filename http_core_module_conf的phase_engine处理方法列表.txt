@@ -1,0 +1,18 @@
+(gdb) p ((ngx_http_phase_handler_t*)(cmcf->phase_engine.handlers))[5]
+$90 = {checker = 0x458eed <ngx_http_core_post_rewrite_phase>, handler = 0, next = 2}
+(gdb) p ((ngx_http_phase_handler_t*)(cmcf->phase_engine.handlers))[6]
+$91 = {checker = 0x4588d4 <ngx_http_core_generic_phase>, handler = 0x4abc14 <ngx_http_limit_req_handler>, next = 8}
+(gdb) p ((ngx_http_phase_handler_t*)(cmcf->phase_engine.handlers))[7]
+$92 = {checker = 0x4588d4 <ngx_http_core_generic_phase>, handler = 0x4aaa88 <ngx_http_limit_conn_handler>, next = 8}
+(gdb) p ((ngx_http_phase_handler_t*)(cmcf->phase_engine.handlers))[8]
+$93 = {checker = 0x4590de <ngx_http_core_access_phase>, handler = 0x4aa3cc <ngx_http_access_handler>, next = 11}
+(gdb) p ((ngx_http_phase_handler_t*)(cmcf->phase_engine.handlers))[9]
+$94 = {checker = 0x4590de <ngx_http_core_access_phase>, handler = 0x4a9734 <ngx_http_auth_basic_handler>, next = 11}
+(gdb) p ((ngx_http_phase_handler_t*)(cmcf->phase_engine.handlers))[10]
+$95 = {checker = 0x4592f6 <ngx_http_core_post_access_phase>, handler = 0, next = 11}
+(gdb) p ((ngx_http_phase_handler_t*)(cmcf->phase_engine.handlers))[11]
+$96 = {checker = 0x459d3b <ngx_http_core_content_phase>, handler = 0x48e31c <ngx_http_index_handler>, next = 14}
+(gdb) p ((ngx_http_phase_handler_t*)(cmcf->phase_engine.handlers))[12]
+$97 = {checker = 0x459d3b <ngx_http_core_content_phase>, handler = 0x4a7070 <ngx_http_autoindex_handler>, next = 14}
+(gdb) p ((ngx_http_phase_handler_t*)(cmcf->phase_engine.handlers))[13]
+$98 = {checker = 0x459d3b <ngx_http_core_content_phase>, handler = 0x48d96c <ngx_http_static_handler>, next = 14}

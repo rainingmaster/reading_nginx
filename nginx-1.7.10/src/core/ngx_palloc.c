@@ -160,10 +160,10 @@ ngx_pnalloc(ngx_pool_t *pool, size_t size)
         p = pool->current;
 
         do {
-            m = p->d.last;
+            m = p->d.last; //最后使用位置
 
             if ((size_t) (p->d.end - m) >= size) {
-                p->d.last = m + size;
+                p->d.last = m + size; //使用量偏移size位
 
                 return m;
             }

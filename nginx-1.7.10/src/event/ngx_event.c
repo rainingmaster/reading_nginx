@@ -913,6 +913,9 @@ ngx_send_lowat(ngx_connection_t *c, size_t lowat)
 }
 
 
+/*
+ * 构建命令events的块
+ */
 static char *
 ngx_events_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -969,6 +972,11 @@ ngx_events_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     cf->module_type = NGX_EVENT_MODULE;
     cf->cmd_type = NGX_EVENT_CONF;
 
+    /*
+     * 走到了event{}块中
+     * 接着执行conf中接下来的命令
+     * 隔着一层的递归
+     */
     rv = ngx_conf_parse(cf, NULL);
 
     *cf = pcf;
@@ -998,7 +1006,7 @@ ngx_events_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 static char *
 ngx_event_connections(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    ngx_event_conf_t  *ecf = conf;
+    ngx_event_conf_t  *ecf = conf; //event模块的conf
 
     ngx_str_t  *value;
 
@@ -1012,7 +1020,7 @@ ngx_event_connections(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
                            "use the \"worker_connections\" directive instead");
     }
 
-    value = cf->args->elts;
+    value = cf->args->elts; //获取参数--value[0]为命令名，value[1]为参数1
     ecf->connections = ngx_atoi(value[1].data, value[1].len);
     if (ecf->connections == (ngx_uint_t) NGX_ERROR) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,

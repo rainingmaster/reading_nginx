@@ -247,7 +247,7 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
         }
 
 
-        //处理该命令，存于cf->args中
+        //处理该命令，参数存于cf->args中
         rc = ngx_conf_handler(cf, rc);
 
         if (rc == NGX_ERROR) {
@@ -461,7 +461,7 @@ ngx_conf_read_token(ngx_conf_t *cf)
     s_quoted = 0;
     d_quoted = 0;
 
-    cf->args->nelts = 0;
+    cf->args->nelts = 0; //参数长度重新置为0，之前的空间可以得到重用
     b = cf->conf_file->buffer;
     start = b->pos;
     start_line = cf->conf_file->line;
@@ -470,7 +470,7 @@ ngx_conf_read_token(ngx_conf_t *cf)
 
     for ( ;; ) {
 
-        if (b->pos >= b->last) { //读取位置 > 末尾位置，仍未读完
+        if (b->pos >= b->last) { //读取位置 > 末尾位置，仍未读完。会记录在cf->conf_file->buffer，带回上一层
 
             if (cf->conf_file->file.offset >= file_size) {
 
@@ -668,14 +668,14 @@ ngx_conf_read_token(ngx_conf_t *cf)
             }
 
             //遇到单引号/双引号/空格/换行...为找到对应内容
-            if (d_quoted) {
+            if (d_quoted) { //之前遇到双引号状态下
                 if (ch == '"') {
                     d_quoted = 0;
                     need_space = 1;
                     found = 1;
                 }
 
-            } else if (s_quoted) {
+            } else if (s_quoted) { //之前遇到单引号状态下
                 if (ch == '\'') {
                     s_quoted = 0;
                     need_space = 1;
@@ -683,26 +683,30 @@ ngx_conf_read_token(ngx_conf_t *cf)
                 }
 
             } else if (ch == ' ' || ch == '\t' || ch == CR || ch == LF
-                       || ch == ';' || ch == '{')
+                       || ch == ';' || ch == '{') //已经找到对应一项
             {
                 last_space = 1;
                 found = 1;
             }
 
             if (found) { //找到对应内容!
-                word = ngx_array_push(cf->args);
+                word = ngx_array_push(cf->args); //已经定义好的ngx_str_t空间
                 if (word == NULL) {
                     return NGX_ERROR;
                 }
 
-                word->data = ngx_pnalloc(cf->pool, b->pos - start + 1); //申请对应内存，读取位置到开始位置
+                /*
+                 * 申请对应内存，读取位置到开始位置
+                 * 之前的内容仍然会保留在pool中，之后再一起释放
+                 */
+                word->data = ngx_pnalloc(cf->pool, b->pos - start + 1);
                 if (word->data == NULL) {
                     return NGX_ERROR;
                 }
 
-                 //拷贝内容
+                //start到b->pos之前内容，跳过无用信息，仅保存正常命令
                 for (dst = word->data, src = start, len = 0;
-                     src < b->pos - 1;
+                     src < b->pos - 1; //读取位置前1位
                      len++)
                 {
                     //跳过空行，空格等
@@ -736,7 +740,7 @@ ngx_conf_read_token(ngx_conf_t *cf)
                 *dst = '\0'; //结束符
                 word->len = len;
 
-                if (ch == ';') {
+                if (ch == ';') { //一段conf完结
                     return NGX_OK;
                 }
 
@@ -751,6 +755,9 @@ ngx_conf_read_token(ngx_conf_t *cf)
 }
 
 
+/*
+ * 包含其他配置文件 
+ */
 char *
 ngx_conf_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -768,7 +775,7 @@ ngx_conf_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    if (strpbrk((char *) file.data, "*?[") == NULL) {
+    if (strpbrk((char *) file.data, "*?[") == NULL) { //包含*
 
         ngx_log_debug1(NGX_LOG_DEBUG_CORE, cf->log, 0, "include %s", file.data);
 

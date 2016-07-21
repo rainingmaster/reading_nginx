@@ -898,6 +898,7 @@ ngx_filename_cmp(u_char *s1, u_char *s2, size_t n)
 }
 
 
+//字符串转整形
 ngx_int_t
 ngx_atoi(u_char *line, size_t n)
 {
@@ -907,7 +908,7 @@ ngx_atoi(u_char *line, size_t n)
         return NGX_ERROR;
     }
 
-    for (value = 0; n--; line++) {
+    for (value = 0; n--; line++) { //逐位转为十进制
         if (*line < '0' || *line > '9') {
             return NGX_ERROR;
         }
