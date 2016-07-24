@@ -60,6 +60,7 @@ struct ngx_cycle_s {
     ngx_array_t               listening;
 
     //保存着Nginx所有要操作的目录，如果目录不存在，则会试图创建，而创建目录失败将会导致Nginx启动失败。
+    //通过ngx_add_path添加
     ngx_array_t               paths;
 
     //保存Nginx已经打开的所有文件(ngx_open_file_t结构体)的单链表。

@@ -40,15 +40,16 @@ typedef void (*ngx_path_loader_pt) (void *data);
 
 
 typedef struct {
-    ngx_str_t                  name;
+    ngx_str_t                  name; /* directory 的路径 ( name ) */
     size_t                     len;
-    size_t                     level[3];
+    size_t                     level[3]; /* 子目录层级定义。至多3层， 每层最多2个字符 */
 
+    /* 可定制的缓存管理行为 */
     ngx_path_manager_pt        manager;
     ngx_path_loader_pt         loader;
     void                      *data;
 
-    u_char                    *conf_file;
+    u_char                    *conf_file; /* NULL值表示默认路径 */
     ngx_uint_t                 line;
 } ngx_path_t;
 

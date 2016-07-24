@@ -5208,10 +5208,12 @@ ngx_http_upstream_server(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     value = cf->args->elts;
 
+    //默认值
     weight = 1;
     max_fails = 1;
     fail_timeout = 10;
 
+    //对应0:"server", 1:url, 2:其余设置
     for (i = 2; i < cf->args->nelts; i++) {
 
         if (ngx_strncmp(value[i].data, "weight=", 7) == 0) {
@@ -5289,7 +5291,7 @@ ngx_http_upstream_server(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     ngx_memzero(&u, sizeof(ngx_url_t));
 
-    u.url = value[1];
+    u.url = value[1]; //ip或者url
     u.default_port = 80;
 
     if (ngx_parse_url(cf->pool, &u) != NGX_OK) {
