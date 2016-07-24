@@ -133,7 +133,6 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_http_core_main_conf_t   *cmcf;
 
     /* the main http context */
-    //此ctx为http本身的ctx，cf中带的ctx后台被替换了，那么这个htt的ctx保存在哪里??????????
     ctx = ngx_pcalloc(cf->pool, sizeof(ngx_http_conf_ctx_t));
     if (ctx == NULL) {
         return NGX_CONF_ERROR;

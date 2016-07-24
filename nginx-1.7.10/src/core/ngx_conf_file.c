@@ -297,6 +297,7 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
 
     found = 0;
 
+    /* 所有module的commands都需要预设一遍 */
     for (i = 0; ngx_modules[i]; i++) {
 
         cmd = ngx_modules[i]->commands;
@@ -383,7 +384,7 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
                 conf = ((void **) cf->ctx)[ngx_modules[i]->index];
 
             } else if (cmd->type & NGX_MAIN_CONF) {
-                //获取指针，在下面的cmd->set方法中将修改本值，即此时才赋予conf值
+                //获取指针，在下面的cmd->set方法中将修改本值，即此时才获取conf值
                 conf = &(((void **) cf->ctx)[ngx_modules[i]->index]);
 
             } else if (cf->ctx) {
