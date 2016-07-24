@@ -41,9 +41,12 @@
 
 #define NGX_CONF_ARGS_NUMBER 0x000000ff
 #define NGX_CONF_BLOCK       0x00000100
+//有且仅有2个参数
 #define NGX_CONF_FLAG        0x00000200
 #define NGX_CONF_ANY         0x00000400
+//大于1个参数
 #define NGX_CONF_1MORE       0x00000800
+//大于2个参数
 #define NGX_CONF_2MORE       0x00001000
 #define NGX_CONF_MULTI       0x00000000  /* compatibility */
 

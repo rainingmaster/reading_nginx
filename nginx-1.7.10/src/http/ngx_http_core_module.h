@@ -362,6 +362,7 @@ struct ngx_http_core_loc_conf_s {
     uint32_t      limit_except;
     void        **limit_except_loc_conf;
 
+    //content的处理器，最后会赋予到r->content_handler中
     ngx_http_handler_pt  handler;
 
     /* location name length for inclusive location with inherited alias */

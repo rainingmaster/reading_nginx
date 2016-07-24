@@ -1,0 +1,24 @@
+http_core_module_conf的handlers.nelts输出
+
+(gdb) p cmcf->phases[0].handlers.nelts
+$4 = 0
+(gdb) p cmcf->phases[1].handlers.nelts
+$5 = 2
+(gdb) p cmcf->phases[2].handlers.nelts
+$6 = 0
+(gdb) p cmcf->phases[3].handlers.nelts
+$7 = 2
+(gdb) p cmcf->phases[4].handlers.nelts
+$8 = 0
+(gdb) p cmcf->phases[5].handlers.nelts
+$9 = 2
+(gdb) p cmcf->phases[6].handlers.nelts
+$10 = 2
+(gdb) p cmcf->phases[7].handlers.nelts
+$11 = 0
+(gdb) p cmcf->phases[8].handlers.nelts
+$12 = 0
+(gdb) p cmcf->phases[9].handlers.nelts
+$13 = 3
+(gdb) p cmcf->phases[10].handlers.nelts
+$14 = 1

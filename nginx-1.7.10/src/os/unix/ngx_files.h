@@ -173,6 +173,7 @@ ngx_int_t ngx_set_file_time(u_char *name, ngx_fd_t fd, time_t s);
 #define ngx_file_info(file, sb)  stat((const char *) file, sb)
 #define ngx_file_info_n          "stat()"
 
+//由文件描述词取得文件状态 
 #define ngx_fd_info(fd, sb)      fstat(fd, sb)
 #define ngx_fd_info_n            "fstat()"
 

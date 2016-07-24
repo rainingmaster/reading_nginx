@@ -119,6 +119,9 @@ ngx_module_t  ngx_http_module = {
 
 /*
  * 在ngx_conf_handler中调用
+ * 建立main_conf,loc_conf,scr_conf
+ * main级即http层
+ * 填充main_conf->phase_engine下面各个阶段的处理方法
  */
 static char *
 ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
@@ -281,6 +284,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             }
         }
 
+        //填充cmcf->servers
         rv = ngx_http_merge_servers(cf, cmcf, module, mi);
         if (rv != NGX_CONF_OK) {
             goto failed;
@@ -616,6 +620,11 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 }
 
 
+/*
+ * 合并服务配置
+ * 在ngx_http_block中调用
+ * 包括合并svr级和loc级，设置是按照不同module独立的
+ */
 static char *
 ngx_http_merge_servers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
     ngx_http_module_t *module, ngx_uint_t ctx_index)
@@ -637,7 +646,7 @@ ngx_http_merge_servers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
 
         ctx->srv_conf = cscfp[s]->ctx->srv_conf;
 
-        //ngx_http_core_merge_srv_conf
+        //调用每个module的merge_srv_conf合并srv配置方法
         if (module->merge_srv_conf) {
             rv = module->merge_srv_conf(cf, saved.srv_conf[ctx_index],
                                         cscfp[s]->ctx->srv_conf[ctx_index]);
