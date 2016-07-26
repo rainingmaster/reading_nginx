@@ -462,6 +462,9 @@ ngx_module_t ngx_http_lua_module = {
 };
 
 
+/*
+ * ngx_http_lua_module中ngx_http_lua_module_ctx的postconfiguration执行函数
+ */
 static ngx_int_t
 ngx_http_lua_init(ngx_conf_t *cf)
 {
@@ -545,6 +548,7 @@ ngx_http_lua_init(ngx_conf_t *cf)
         }
     }
 
+    //未建立lua的vm实例
     if (lmcf->lua == NULL) {
         dd("initializing lua vm");
 
@@ -552,6 +556,7 @@ ngx_http_lua_init(ngx_conf_t *cf)
                                   ngx_http_lua_hash_literal("content-length");
         ngx_http_lua_location_hash = ngx_http_lua_hash_literal("location");
 
+        //建立lua的vm实例，相当于每个worker(子进程)一个
         lmcf->lua = ngx_http_lua_init_vm(NULL, cf->cycle, cf->pool, lmcf,
                                          cf->log, NULL);
         if (lmcf->lua == NULL) {

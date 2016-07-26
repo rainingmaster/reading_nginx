@@ -132,6 +132,11 @@ ngx_http_lua_content_wev_handler(ngx_http_request_t *r)
 }
 
 
+/*
+ * lua代码处理器
+ * 在ngx_http_lua_content_by_lua中被挂载在ngx_http_core_loc_conf_t的handler中
+ * 每次访问在ngx_http_core_content_phase时调用
+ */
 ngx_int_t
 ngx_http_lua_content_handler(ngx_http_request_t *r)
 {
@@ -155,6 +160,7 @@ ngx_http_lua_content_handler(ngx_http_request_t *r)
     dd("ctx = %p", ctx);
 
     if (ctx == NULL) {
+        //构建上下文，存于(r)->ctx[module.ctx_index]中
         ctx = ngx_http_lua_create_ctx(r);
         if (ctx == NULL) {
             return NGX_HTTP_INTERNAL_SERVER_ERROR;

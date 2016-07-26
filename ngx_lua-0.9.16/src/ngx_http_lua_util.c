@@ -185,6 +185,9 @@ ngx_http_lua_create_new_globals_table(lua_State *L, int narr, int nrec)
 }
 
 
+/*
+ * 建立一个新的lua的vm实例
+ */
 static lua_State *
 ngx_http_lua_new_state(lua_State *parent_vm, ngx_cycle_t *cycle,
     ngx_http_lua_main_conf_t *lmcf, ngx_log_t *log)
@@ -3703,6 +3706,7 @@ ngx_http_lua_init_vm(lua_State *parent_vm, ngx_cycle_t *cycle,
     state->vm = L;
     state->count = 1;
 
+    //会将state->vm带出本层
     cln->data = state;
 
     if (pcln) {

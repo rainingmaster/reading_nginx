@@ -248,6 +248,9 @@ ngx_http_lua_init_ctx(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
 }
 
 
+/*
+ * 建立lua的上下文
+ */
 static ngx_inline ngx_http_lua_ctx_t *
 ngx_http_lua_create_ctx(ngx_http_request_t *r)
 {
@@ -266,11 +269,13 @@ ngx_http_lua_create_ctx(ngx_http_request_t *r)
     ngx_http_set_ctx(r, ctx, ngx_http_lua_module);
 
     llcf = ngx_http_get_module_loc_conf(r, ngx_http_lua_module);
+    //没开启lua代码缓存，且断开了链接
     if (!llcf->enable_code_cache && r->connection->fd != -1) {
         lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
         dd("lmcf: %p", lmcf);
 
+        /* 建立lua的虚拟机。因为没有缓存代码，所以每次访问都将独立建立vm */
         L = ngx_http_lua_init_vm(lmcf->lua, lmcf->cycle, r->pool, lmcf,
                                  r->connection->log, &cln);
         if (L == NULL) {
@@ -286,6 +291,7 @@ ngx_http_lua_create_ctx(ngx_http_request_t *r)
             }
         }
 
+        //ctx->vm_state->vm为lmcf->lua
         ctx->vm_state = cln->data;
 
     } else {
@@ -296,6 +302,12 @@ ngx_http_lua_create_ctx(ngx_http_request_t *r)
 }
 
 
+/*
+ * 从request中获取到lua的vm实例
+ * (r)->ctx[module.ctx_index]->vm_state->vm
+ * 或者是
+ * ngx_http_lua_main_conf_t->lua
+ */
 static ngx_inline lua_State *
 ngx_http_lua_get_lua_vm(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
 {

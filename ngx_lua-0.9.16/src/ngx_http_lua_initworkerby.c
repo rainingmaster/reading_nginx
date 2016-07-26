@@ -18,6 +18,9 @@ static u_char *ngx_http_lua_log_init_worker_error(ngx_log_t *log,
     u_char *buf, size_t len);
 
 
+/*
+ * ngx_http_lua_moduleµÄinit process
+ */
 ngx_int_t
 ngx_http_lua_init_worker(ngx_cycle_t *cycle)
 {
