@@ -203,7 +203,7 @@ typedef struct {
 
     u_char                  *access_src_key; /* cached key for access_src */
 
-    u_char                  *content_chunkname;
+    u_char                  *content_chunkname; /* 记录配置中 lua 代码的位置，用于做 lua vm 中缓存的key */
     ngx_http_complex_value_t content_src;    /*  content_by_lua
                                                 inline script/script
                                                 file path */
@@ -341,7 +341,7 @@ typedef struct {
 
 typedef struct ngx_http_lua_ctx_s {
     /* for lua_coce_cache off: */
-    ngx_http_lua_vm_state_t  *vm_state;
+    ngx_http_lua_vm_state_t  *vm_state; //lua vm 实例
 
     ngx_http_request_t      *request;
     ngx_http_handler_pt      resume_handler;
@@ -426,9 +426,9 @@ typedef struct ngx_http_lua_ctx_s {
     unsigned         headers_set:1; /* whether the user has set custom
                                        response headers */
 
-    unsigned         entered_rewrite_phase:1;
-    unsigned         entered_access_phase:1;
-    unsigned         entered_content_phase:1;
+    unsigned         entered_rewrite_phase:1; /* 进入重写阶段标识 */
+    unsigned         entered_access_phase:1; /* 进入access阶段标识 */
+    unsigned         entered_content_phase:1; /* 进入内容处理阶段标识 */
 
     unsigned         buffering:1; /* HTTP 1.0 response body buffering flag */
 

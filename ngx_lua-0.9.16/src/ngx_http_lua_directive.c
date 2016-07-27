@@ -641,6 +641,10 @@ ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         }
     }
 
+    /*
+     * 将内容处理器content_handler(将在收到请求阶段的ngx_http_lua_content_handler运行)挂载为cmd->post
+     * 可能为 ngx_http_lua_content_handler_inline 或 ngx_http_lua_content_handler_file
+     */
     llcf->content_handler = (ngx_http_handler_pt) cmd->post;
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);

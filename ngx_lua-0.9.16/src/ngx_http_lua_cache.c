@@ -31,6 +31,9 @@
  *         |     ...    |
  *
  * */
+/*
+ * 加载lua的代码缓存
+ */
 static ngx_int_t
 ngx_http_lua_cache_load_code(ngx_http_request_t *r, lua_State *L,
     const char *key)
@@ -49,14 +52,17 @@ ngx_http_lua_cache_load_code(ngx_http_request_t *r, lua_State *L,
         return NGX_ERROR;
     }
 
+    //查找对应代码并推到栈顶
     lua_getfield(L, -1, key);    /*  sp++ */
 
+    //栈顶内容不是function,即没有设置过代码chunk的缓存
     if (lua_isfunction(L, -1)) {
         /*  call closure factory to gen new closure */
         rc = lua_pcall(L, 0, 1, 0);
         if (rc == 0) {
             /*  remove cache table from stack, leave code chunk at
              *  top of stack */
+            //将之前的 lua_pushlightuserdata 和 lua_getfield 删除
             lua_remove(L, -2);   /*  sp-- */
             return NGX_OK;
         }
@@ -80,6 +86,7 @@ ngx_http_lua_cache_load_code(ngx_http_request_t *r, lua_State *L,
        lua_gettop(L), lua_typename(L, -1));
 
     /*  remove cache table and value from stack */
+    //将之前的 lua_pushlightuserdata 和 lua_getfield 删除
     lua_pop(L, 2);                                /*  sp-=2 */
 
     return NGX_DECLINED;
@@ -99,6 +106,9 @@ ngx_http_lua_cache_load_code(ngx_http_request_t *r, lua_State *L,
  *         |     ...    |
  *
  * */
+/*
+ * 存入lua的代码缓存
+ */
 static ngx_int_t
 ngx_http_lua_cache_store_code(lua_State *L, const char *key)
 {
@@ -165,7 +175,7 @@ ngx_http_lua_cache_loadbuffer(ngx_http_request_t *r, lua_State *L,
     /* load closure factory of inline script to the top of lua stack, sp++ */
     rc = ngx_http_lua_clfactory_loadbuffer(L, (char *) src, src_len, name);
 
-    if (rc != 0) {
+    if (rc != 0) { // lua_load返回的值
         /*  Oops! error occured when loading Lua script */
         if (rc == LUA_ERRMEM) {
             err = "memory allocation error";

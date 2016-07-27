@@ -21,6 +21,9 @@
 static void ngx_http_lua_content_phase_post_read(ngx_http_request_t *r);
 
 
+/*
+ * lua代码处理函数
+ */
 ngx_int_t
 ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
 {
@@ -173,7 +176,7 @@ ngx_http_lua_content_handler(ngx_http_request_t *r)
         return NGX_DONE;
     }
 
-    if (ctx->entered_content_phase) {
+    if (ctx->entered_content_phase) { //已经进入内容解析阶段
         dd("calling wev handler");
         rc = ctx->resume_handler(r);
         dd("wev handler returns %d", (int) rc);
@@ -205,6 +208,7 @@ ngx_http_lua_content_handler(ngx_http_request_t *r)
 
     dd("setting entered");
 
+    //进入内容解析阶段
     ctx->entered_content_phase = 1;
 
     dd("calling content handler");
@@ -247,6 +251,7 @@ ngx_http_lua_content_handler_file(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
+    //脚本文件的位置
     script_path = ngx_http_lua_rebase_path(r->pool, eval_src.data,
                                            eval_src.len);
 
