@@ -718,6 +718,10 @@ ngx_http_lua_init_globals(lua_State *L, ngx_cycle_t *cycle,
 }
 
 
+/*
+ * 注入 ngx.* 等api到 lua 中
+ * 在 ngx_http_lua_init_globals 中调用，在创建 lua vm 的实例成功后运行
+ */
 static void
 ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
     ngx_log_t *log)
@@ -727,25 +731,28 @@ ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
     lua_pushcfunction(L, ngx_http_lua_get_raw_phase_context);
     lua_setfield(L, -2, "_phase_ctx");
 
-    ngx_http_lua_inject_arg_api(L);
+    ngx_http_lua_inject_arg_api(L); /* ngx.arg.* */
 
+    //设置 http 相关宏
     ngx_http_lua_inject_http_consts(L);
+    //设置 系统错误码 相关宏
     ngx_http_lua_inject_core_consts(L);
 
-    ngx_http_lua_inject_log_api(L);
-    ngx_http_lua_inject_output_api(L);
-    ngx_http_lua_inject_time_api(L);
-    ngx_http_lua_inject_string_api(L);
-    ngx_http_lua_inject_control_api(log, L);
-    ngx_http_lua_inject_subrequest_api(L);
-    ngx_http_lua_inject_sleep_api(L);
-    ngx_http_lua_inject_phase_api(L);
+    ngx_http_lua_inject_log_api(L); /* ngx.log/ngx.print(equal to ngx.log(ngx.NOTICE, ...) */
+    ngx_http_lua_inject_output_api(L); /* ngx.print() 等输出功能 */
+    ngx_http_lua_inject_time_api(L); /* ngx.arg.* */
+    ngx_http_lua_inject_string_api(L); /* ngx.md5 等字符串操作 */
+    ngx_http_lua_inject_control_api(log, L); /* ngx.redirect 等转向功能 */
+    /* 子查询功能 */
+    ngx_http_lua_inject_subrequest_api(L); /* ngx.capture()/ngx.capture_multi()/ngx.location() */
+    ngx_http_lua_inject_sleep_api(L); /* ngx.sleep() */
+    ngx_http_lua_inject_phase_api(L); /* ngx.get_phase() */
 
 #if (NGX_PCRE)
     ngx_http_lua_inject_regex_api(L);
 #endif
 
-    ngx_http_lua_inject_req_api(log, L);
+    ngx_http_lua_inject_req_api(log, L); /* ngx.req.* */
     ngx_http_lua_inject_resp_header_api(L);
     ngx_http_lua_create_headers_metatable(log, L);
     ngx_http_lua_inject_variable_api(L);
@@ -765,6 +772,7 @@ ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
     lua_setfield(L, -2, "ngx"); /* ngx package loaded */
     lua_pop(L, 2);
 
+    /* 将ngx 设置为全局变量 */
     lua_setglobal(L, "ngx");
 
     ngx_http_lua_inject_coroutine_api(log, L);
@@ -2103,7 +2111,7 @@ ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L)
     ngx_http_lua_inject_req_method_api(L);
     ngx_http_lua_inject_req_time_api(L);
 
-    lua_setfield(L, -2, "req");
+    lua_setfield(L, -2, "req"); /* 设置表的名称为 req */
 }
 
 
@@ -3688,7 +3696,7 @@ ngx_http_lua_init_vm(lua_State *parent_vm, ngx_cycle_t *cycle,
     }
 
     /* create new Lua VM instance */
-    L = ngx_http_lua_new_state(parent_vm, cycle, lmcf, log);
+    L = ngx_http_lua_new_state(parent_vm, cycle, lmcf, log); //将注入 ngx.* 等 openresty 带的方法
     if (L == NULL) {
         return NULL;
     }
@@ -3713,7 +3721,7 @@ ngx_http_lua_init_vm(lua_State *parent_vm, ngx_cycle_t *cycle,
         *pcln = cln;
     }
 
-    if (lmcf->preload_hooks) {
+    if (lmcf->preload_hooks) { //预加载的钩子函数
 
         /* register the 3rd-party module's preload hooks */
 
@@ -3722,6 +3730,7 @@ ngx_http_lua_init_vm(lua_State *parent_vm, ngx_cycle_t *cycle,
 
         hook = lmcf->preload_hooks->elts;
 
+        /* 将 hook 数组中所有 package 注入到 lua 中 */
         for (i = 0; i < lmcf->preload_hooks->nelts; i++) {
 
             ngx_http_lua_probe_register_preload_package(L, hook[i].package);

@@ -70,7 +70,7 @@ typedef struct {
 
 typedef struct {
     ngx_hash_t                       headers_in_hash;
-    ngx_array_t                      upstreams;
+    ngx_array_t                      upstreams; /* 存放所有ngx_http_upstream_srv_conf_t，一个数组 */
                                              /* ngx_http_upstream_srv_conf_t */
 } ngx_http_upstream_main_conf_t;
 
