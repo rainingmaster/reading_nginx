@@ -103,6 +103,7 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
         r->read_event_handler = ngx_http_block_reading;
     }
 
+    //执行 lua 代码
     rc = ngx_http_lua_run_thread(L, r, ctx, 0);
 
     if (rc == NGX_ERROR || rc >= NGX_OK) {
@@ -236,6 +237,10 @@ ngx_http_lua_content_phase_post_read(ngx_http_request_t *r)
 }
 
 
+/*
+ * 使用 content_by_lua_file 时
+ * ngx_http_lua_content_handler 中调用
+ */
 ngx_int_t
 ngx_http_lua_content_handler_file(ngx_http_request_t *r)
 {
@@ -279,6 +284,10 @@ ngx_http_lua_content_handler_file(ngx_http_request_t *r)
 }
 
 
+/*
+ * 使用 content_by_lua 时
+ * ngx_http_lua_content_handler 中调用
+ */
 ngx_int_t
 ngx_http_lua_content_handler_inline(ngx_http_request_t *r)
 {

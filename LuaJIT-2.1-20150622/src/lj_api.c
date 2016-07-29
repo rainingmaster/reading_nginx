@@ -99,6 +99,9 @@ LUALIB_API void luaL_checkstack(lua_State *L, int size, const char *msg)
     lj_err_callerv(L, LJ_ERR_STKOVM, msg);
 }
 
+/*
+ * 从 from 的堆栈中弹出 n 个值， 然后把它们压入 to 的堆栈中
+ */
 LUA_API void lua_xmove(lua_State *from, lua_State *to, int n)
 {
   TValue *f, *t;
@@ -114,11 +117,17 @@ LUA_API void lua_xmove(lua_State *from, lua_State *to, int n)
 
 /* -- Stack manipulation -------------------------------------------------- */
 
+/*
+ * 返回栈顶元素的索引。 因为索引是从 1 开始编号的， 所以这个结果等于堆栈上的元素个数（因此返回 0 表示堆栈为空）。
+ */
 LUA_API int lua_gettop(lua_State *L)
 {
   return (int)(L->top - L->base);
 }
 
+/*
+ * 参数允许传入任何可接受的索引以及 0 。 它将把堆栈的栈顶设为这个索引。 如果新的栈顶比原来的大，超出部分的新元素将被填为 nil 。 如果 index 为 0 ，把栈上所有元素移除。
+ */
 LUA_API void lua_settop(lua_State *L, int idx)
 {
   if (idx >= 0) {
@@ -152,6 +161,9 @@ LUA_API void lua_insert(lua_State *L, int idx)
   copyTV(L, p, L->top);
 }
 
+/*
+ * 将栈顶元素压入指定位置而不移动任何元素（因此指定位置的元素的值被替换）
+ */
 LUA_API void lua_replace(lua_State *L, int idx)
 {
   api_checknelems(L, 1);
@@ -176,6 +188,14 @@ LUA_API void lua_replace(lua_State *L, int idx)
   L->top--;
 }
 
+/*
+ * 复制栈上元素并压入栈
+ * 把堆栈上给定有效处索引处的元素作一个拷贝压栈。
+ * 操作:   value = Stack[index]       
+ *         Stack.push(value)
+ * 无返回值
+ * 栈+1 
+ */
 LUA_API void lua_pushvalue(lua_State *L, int idx)
 {
   copyTV(L, L->top, index2adr(L, idx));
@@ -611,6 +631,14 @@ LUA_API const char *lua_pushfstring(lua_State *L, const char *fmt, ...)
   return ret;
 }
 
+/*
+ * 注册c函数到lua中, 其实没有这回事, lua中只有c闭包
+ * 向栈上压一个C闭包
+ * 当一个c函数被创建时, 可以绑定几个值在它上面, 从而形成一个闭包.  在任何时刻调用这个c函数时, 都可以访问这几个绑定值. 
+ * 绑定的方法: 先一次压入要绑定的n个值到栈上, 然后调用lua_pushcclosure(L, fn, n)这样就形成的一个c闭包
+ * 无返回值
+ * 栈 –(n - 1) , 一共弹出n个元素(及那些绑定的值), 压入一个cclosure
+ */
 LUA_API void lua_pushcclosure(lua_State *L, lua_CFunction f, int n)
 {
   GCfunc *fn;
@@ -638,6 +666,13 @@ LUA_API void lua_pushlightuserdata(lua_State *L, void *p)
   incr_top(L);
 }
 
+/*
+ * 建一个新表
+ * 创建一个新的table, 并把它放在栈顶. narr和nrec分别指定该table的array部分和hash部分的预分配元素数量
+ * 无返回值
+ * 栈高度+1, 栈顶元素是新table
+ * #define lua_newtable(L) lua_createtable(L, 0, 0) 常用这个
+ */
 LUA_API void lua_createtable(lua_State *L, int narray, int nrec)
 {
   lj_gc_check(L);
@@ -645,6 +680,21 @@ LUA_API void lua_createtable(lua_State *L, int narray, int nrec)
   incr_top(L);
 }
 
+/*
+ * 创建一个元表
+ * 操作:   1. 在注册表中查找tname, 如果已经注册, 就返回0, 否者继续, 并平栈
+ *         lua_getfield(L, LUA_REGISTRYINDEX, tname)
+ *         if (!lua_isnil(L, -1))
+ *             return 0;
+ *         lua_pop(L, 1);
+ *         2. 创建一个表, 并注册, 返回1
+ *         lua_newtable(L)
+ *         lua_pushvalue(L, -1)
+ *         lua_setfield(L, LUA_REGISTRYINDEX, tname)
+ *         return 1
+ * 有返回值
+ * 栈+1, 栈顶元素是在注册表中注册过的新表
+ */
 LUALIB_API int luaL_newmetatable(lua_State *L, const char *tname)
 {
   GCtab *regt = tabV(registry(L));
@@ -668,6 +718,12 @@ LUA_API int lua_pushthread(lua_State *L)
   return (mainthread(G(L)) == L);
 }
 
+/*
+ * 创建一个新线程，并将其压入堆栈，并返回维护这个线程的 lua_State 指针。
+ * 这个函数返回的新状态机共享原有状态机中的所有对象（比如一些 table），但是它有独立的执行堆栈。
+ * 没有显式的函数可以用来关闭或销毁掉一个线程。
+ * 线程跟其它 Lua 对象一样是垃圾收集的条目之一。
+ */
 LUA_API lua_State *lua_newthread(lua_State *L)
 {
   lua_State *L1;
@@ -678,6 +734,13 @@ LUA_API lua_State *lua_newthread(lua_State *L)
   return L1;
 }
 
+/*
+ * 创建 C 值, 用于存储 C 的内容
+ * 该函数分配一块由size指定大小的内存块, 并放在栈顶
+ * 返回值是新分配的块的地址
+ * 栈+1， 栈顶是 userdata
+ * userdata 用来在lua中表示c中的值. 一个完整的 userdata 有自己的元表, 在垃圾回收时, 可以调用它的元表的 __gc 方法
+ */
 LUA_API void *lua_newuserdata(lua_State *L, size_t size)
 {
   GCudata *ud;
@@ -716,6 +779,17 @@ LUA_API void lua_concat(lua_State *L, int n)
 
 /* -- Object getters ------------------------------------------------------ */
 
+/*
+ * 操作:      ele = Stack[index]
+ *            key = Stack.top()
+ *            Stack.pop()
+ *            value = ele[key]
+ *            Stack.push(value)
+ * 根据index指定取到相应的表; 取栈顶元素为key, 并弹出栈; 获取表中key的值压入栈顶.
+ * 无返回值
+ * 栈高度不变, 但是发生了一次弹出和压入的操作, 弹出的是key, 压入的是value
+ * 注意, 该操作将触发 __index 元方法
+ */
 LUA_API void lua_gettable(lua_State *L, int idx)
 {
   cTValue *v, *t = index2adr(L, idx);
@@ -730,6 +804,15 @@ LUA_API void lua_gettable(lua_State *L, int idx)
   copyTV(L, L->top-1, v);
 }
 
+/*
+ * 取表中的元素
+ * 操作:    arr = Stack[index]    // arr肯定是表
+ *          Stack.push( arr[k] )
+ * 取表中键为k的元素, 这里的表是由index指向的栈上的一个表
+ * 无返回值
+ * 栈高度+1, 栈顶元素是(Stack[index])[k]
+ * 注意, 该操作将触发 __index 元方法
+ */
 LUA_API void lua_getfield(lua_State *L, int idx, const char *k)
 {
   cTValue *v, *t = index2adr(L, idx);
@@ -748,7 +831,8 @@ LUA_API void lua_getfield(lua_State *L, int idx, const char *k)
 }
 
 /*
- * 直接访问(不触发__index元方法)
+ * 和lua_gettable操作一样
+ * 但是不触发相应的元方法
  */
 LUA_API void lua_rawget(lua_State *L, int idx)
 {
@@ -758,7 +842,12 @@ LUA_API void lua_rawget(lua_State *L, int idx)
 }
 
 /*
- * 直接访问(不触发__index元方法),并将值设置为n
+ * 操作:   ele = Stack[index]
+ *         value = ele[n]
+ *         Stack.push(value)
+ * 无返回值
+ * 栈+1，栈顶新增元素就是 value
+ * 不触发相应的元方法
  */
 LUA_API void lua_rawgeti(lua_State *L, int idx, int n)
 {
@@ -879,6 +968,18 @@ LUALIB_API void *luaL_checkudata(lua_State *L, int idx, const char *tname)
 
 /* -- Object setters ------------------------------------------------------ */
 
+/*
+ * 操作:   ele    = Stack[index]
+ *         value  = Stack.top()
+ *         Stack.pop()
+ *         key    = Stack.top()
+ *         Stack.pop()
+ *         ele[key] = value
+ * 根据index指定取到相应的表; 取栈顶元素做value, 弹出之; 再取当前栈顶元素做key, 亦弹出之; 然后将表的键为key的元素赋值为value
+ * 无返回值
+ * 栈高度-2, 第一次弹出value, 第二次弹出key
+ * 注意, 该操作将触发 __newindex 元方法
+ */
 LUA_API void lua_settable(lua_State *L, int idx)
 {
   TValue *o;
@@ -899,6 +1000,16 @@ LUA_API void lua_settable(lua_State *L, int idx)
   }
 }
 
+/*
+ * 给表中的元素赋值
+ * 操作:  arr = Stack[index]
+ *        arr[k] = Stack.top()
+ *        Stack.pop()
+ * 给表中键为k的元素赋值value(value就是栈顶元素), 这里的表是由index指向的栈上的一个表
+ * 无返回值
+ * 栈高度-1, 被弹出的是value
+ * 注意, 该操作将触发 __newindex 元方法
+ */
 LUA_API void lua_setfield(lua_State *L, int idx, const char *k)
 {
   TValue *o;
@@ -920,6 +1031,10 @@ LUA_API void lua_setfield(lua_State *L, int idx, const char *k)
   }
 }
 
+/*
+ * 和lua_settable操作一样
+ * 但是不触发相应的元方法
+ */
 LUA_API void lua_rawset(lua_State *L, int idx)
 {
   GCtab *t = tabV(index2adr(L, idx));
@@ -932,6 +1047,15 @@ LUA_API void lua_rawset(lua_State *L, int idx)
   L->top = key;
 }
 
+/*
+ * 操作:   ele = Stack[index]
+ *         value = Stack.top()
+ *         Stack.pop()
+ *         ele[n] = value
+ * 无返回值
+ * 栈-1, 栈顶将value弹出
+ * 不触发相应的元方法
+ */
 LUA_API void lua_rawseti(lua_State *L, int idx, int n)
 {
   GCtab *t = tabV(index2adr(L, idx));
@@ -983,6 +1107,9 @@ LUA_API int lua_setmetatable(lua_State *L, int idx)
   return 1;
 }
 
+/*
+ * 改变函数作用域的函数
+ */
 LUA_API int lua_setfenv(lua_State *L, int idx)
 {
   cTValue *o = index2adr(L, idx);

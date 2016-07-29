@@ -255,24 +255,37 @@ LUALIB_API void luaL_buffinit(lua_State *L, luaL_Buffer *B)
 #define abs_index(L, i) \
   ((i) > 0 || (i) <= LUA_REGISTRYINDEX ? (i) : lua_gettop(L) + (i) + 1)
 
+/*
+ * 在c这边保存一个lua的值的指针
+ */
 LUALIB_API int luaL_ref(lua_State *L, int t)
 {
   int ref;
+  //取得索引
   t = abs_index(L, t);
   if (lua_isnil(L, -1)) {
     lua_pop(L, 1);  /* remove from stack */
+    //如果为nil，则直接返回LUA_REFNIL
     return LUA_REFNIL;  /* `nil' has a unique fixed reference */
   }
+  //得到t[FREELIST_REF]
   lua_rawgeti(L, t, FREELIST_REF);  /* get first free element */
+  //设置ref = t[FREELIST_REF]
   ref = (int)lua_tointeger(L, -1);  /* ref = t[FREELIST_REF] */
+  //弹出t[FREELIST_REF]
   lua_pop(L, 1);  /* remove it from stack */
+  //如果ref不等于0,则说明有已经被unref掉得key
   if (ref != 0) {  /* any free element? */
+    //得到t[ref]，这里t[ref]保存就是上上一次被unref掉得那个key
     lua_rawgeti(L, t, ref);  /* remove it from list */
+    //设置t[FREELIST_REF] = t[ref],这样当下次再进来，我们依然可以通过freelist来直接返回key
     lua_rawseti(L, t, FREELIST_REF);  /* (t[FREELIST_REF] = t[ref]) */
   } else {  /* no free elements */
+    //这里是通过注册表的大小来得到对应的key
     ref = (int)lua_objlen(L, t);
     ref++;  /* create new reference */
   }
+  //设置t[ref]=value
   lua_rawseti(L, t, ref);
   return ref;
 }

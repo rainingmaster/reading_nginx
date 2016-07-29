@@ -176,6 +176,9 @@ ngx_http_lua_set_path(ngx_cycle_t *cycle, lua_State *L, int tab_idx,
  *         | new table | <- top
  *         |    ...    |
  * */
+/*
+ * 新建一个table，命名为_G，即 lua 中的全局表
+ */
 void
 ngx_http_lua_create_new_globals_table(lua_State *L, int narr, int nrec)
 {
@@ -217,6 +220,7 @@ ngx_http_lua_new_state(lua_State *parent_vm, ngx_cycle_t *cycle,
         return NULL;
     }
 
+    //将 parent_vm 中的部分变量拷贝到 L 中
     if (parent_vm) {
         lua_getglobal(parent_vm, "package");
         lua_getfield(parent_vm, -1, "path");
@@ -303,6 +307,11 @@ ngx_http_lua_new_state(lua_State *parent_vm, ngx_cycle_t *cycle,
 }
 
 
+/*
+ * 创建一个新的 lua_thread，供本次 request 使用
+ * 核心方法为 co = lua_newthread(L)
+ * 并对 co 新建全局表/__index()表
+ */
 lua_State *
 ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
 {
@@ -324,7 +333,7 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
      *  globals table.
      */
     /*  new globals table for coroutine */
-    ngx_http_lua_create_new_globals_table(co, 0, 0);
+    ngx_http_lua_create_new_globals_table(co, 0, 0); //给co中创建一个_G
 
     lua_createtable(co, 0, 1);
     ngx_http_lua_get_globals_table(co);
