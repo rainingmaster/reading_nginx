@@ -5072,6 +5072,10 @@ ngx_http_upstream_cache_etag(ngx_http_request_t *r,
 #endif
 
 
+/*
+ * "upstream"命令执行函数
+ * 创建一个/一组可以用于重定向的server
+ */
 static char *
 ngx_http_upstream(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 {
@@ -5092,6 +5096,7 @@ ngx_http_upstream(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     u.no_resolve = 1;
     u.no_port = 1;
 
+    //添加一个upstream的配置项
     uscf = ngx_http_upstream_add(cf, &u, NGX_HTTP_UPSTREAM_CREATE
                                          |NGX_HTTP_UPSTREAM_WEIGHT
                                          |NGX_HTTP_UPSTREAM_MAX_FAILS

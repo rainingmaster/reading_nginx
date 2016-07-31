@@ -177,10 +177,10 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
          * ngx_conf_read_token() may return
          *
          *    NGX_ERROR             there is error
-         *    NGX_OK                the token terminated by ";" was found
-         *    NGX_CONF_BLOCK_START  the token terminated by "{" was found
-         *    NGX_CONF_BLOCK_DONE   the "}" was found
-         *    NGX_CONF_FILE_DONE    the configuration file is done
+         *    NGX_OK                the token terminated by ";" was found，解析完一条配置
+         *    NGX_CONF_BLOCK_START  the token terminated by "{" was found，开始一个block
+         *    NGX_CONF_BLOCK_DONE   the "}" was found，关闭一个block
+         *    NGX_CONF_FILE_DONE    the configuration file is done，全部解析完
          */
 
         if (rc == NGX_ERROR) {
@@ -286,7 +286,7 @@ done:
 
 /*
  * 在ngx_config_parse中调用
- * 使用cf中的参数，调用所有ngx_command_t中的set函数
+ * 使用cf中的参数，暴力查找调用对应函数
  * 此时的cf->ctx为cycle->conf_ctx
  */
 static ngx_int_t
@@ -777,11 +777,11 @@ ngx_conf_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    if (strpbrk((char *) file.data, "*?[") == NULL) { //包含*
+    if (strpbrk((char *) file.data, "*?[") == NULL) { //不包含*
 
         ngx_log_debug1(NGX_LOG_DEBUG_CORE, cf->log, 0, "include %s", file.data);
 
-        return ngx_conf_parse(cf, &file);
+        return ngx_conf_parse(cf, &file); //单独文件
     }
 
     ngx_memzero(&gl, sizeof(ngx_glob_t));

@@ -21,6 +21,9 @@
 static void ngx_http_lua_content_phase_post_read(ngx_http_request_t *r);
 
 
+/*
+ * lua代码处理函数
+ */
 ngx_int_t
 ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
 {
@@ -100,6 +103,7 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
         r->read_event_handler = ngx_http_block_reading;
     }
 
+    //执行 lua 代码
     rc = ngx_http_lua_run_thread(L, r, ctx, 0);
 
     if (rc == NGX_ERROR || rc >= NGX_OK) {
@@ -132,6 +136,11 @@ ngx_http_lua_content_wev_handler(ngx_http_request_t *r)
 }
 
 
+/*
+ * lua代码处理器
+ * 在ngx_http_lua_content_by_lua中被挂载在ngx_http_core_loc_conf_t的handler中
+ * 每次访问在ngx_http_core_content_phase时调用
+ */
 ngx_int_t
 ngx_http_lua_content_handler(ngx_http_request_t *r)
 {
@@ -155,6 +164,7 @@ ngx_http_lua_content_handler(ngx_http_request_t *r)
     dd("ctx = %p", ctx);
 
     if (ctx == NULL) {
+        //构建上下文，存于(r)->ctx[module.ctx_index]中
         ctx = ngx_http_lua_create_ctx(r);
         if (ctx == NULL) {
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
@@ -167,7 +177,7 @@ ngx_http_lua_content_handler(ngx_http_request_t *r)
         return NGX_DONE;
     }
 
-    if (ctx->entered_content_phase) {
+    if (ctx->entered_content_phase) { //已经进入内容解析阶段
         dd("calling wev handler");
         rc = ctx->resume_handler(r);
         dd("wev handler returns %d", (int) rc);
@@ -199,6 +209,7 @@ ngx_http_lua_content_handler(ngx_http_request_t *r)
 
     dd("setting entered");
 
+    //进入内容解析阶段
     ctx->entered_content_phase = 1;
 
     dd("calling content handler");
@@ -226,6 +237,10 @@ ngx_http_lua_content_phase_post_read(ngx_http_request_t *r)
 }
 
 
+/*
+ * 使用 content_by_lua_file 时
+ * ngx_http_lua_content_handler 中调用
+ */
 ngx_int_t
 ngx_http_lua_content_handler_file(ngx_http_request_t *r)
 {
@@ -241,6 +256,7 @@ ngx_http_lua_content_handler_file(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
+    //脚本文件的位置
     script_path = ngx_http_lua_rebase_path(r->pool, eval_src.data,
                                            eval_src.len);
 
@@ -268,6 +284,10 @@ ngx_http_lua_content_handler_file(ngx_http_request_t *r)
 }
 
 
+/*
+ * 使用 content_by_lua 时
+ * ngx_http_lua_content_handler 中调用
+ */
 ngx_int_t
 ngx_http_lua_content_handler_inline(ngx_http_request_t *r)
 {

@@ -566,7 +566,7 @@ ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_str_t                   *value;
     ngx_http_core_loc_conf_t    *clcf;
     ngx_http_lua_main_conf_t    *lmcf;
-    ngx_http_lua_loc_conf_t     *llcf = conf;
+    ngx_http_lua_loc_conf_t     *llcf = conf; //lua local级的配置，基本为本次调用的所有需要信息
 
     ngx_http_compile_complex_value_t         ccv;
 
@@ -581,7 +581,7 @@ ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return "is duplicate";
     }
 
-    value = cf->args->elts;
+    value = cf->args->elts; //获取到lua代码段
 
     if (value[1].len == 0) {
         /*  Oops...Invalid location conf */
@@ -597,7 +597,7 @@ ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             return NGX_CONF_ERROR;
         }
 
-        llcf->content_chunkname = chunkname;
+        llcf->content_chunkname = chunkname; //如 =content_by_lua(nginx.conf:46)
 
         dd("chunkname: %s", chunkname);
 
@@ -641,6 +641,10 @@ ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         }
     }
 
+    /*
+     * 将内容处理器content_handler(将在收到请求阶段的ngx_http_lua_content_handler运行)挂载为cmd->post
+     * 可能为 ngx_http_lua_content_handler_inline 或 ngx_http_lua_content_handler_file
+     */
     llcf->content_handler = (ngx_http_handler_pt) cmd->post;
 
     lmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_lua_module);
@@ -653,7 +657,7 @@ ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    clcf->handler = ngx_http_lua_content_handler;
+    clcf->handler = ngx_http_lua_content_handler; //挂上处理器
 
     return NGX_CONF_OK;
 }
@@ -1052,8 +1056,8 @@ ngx_http_lua_gen_chunk_name(ngx_conf_t *cf, const char *tag, size_t tag_len)
         return NULL;
     }
 
-    if (cf->conf_file->file.name.len) {
-        p = cf->conf_file->file.name.data + cf->conf_file->file.name.len;
+    if (cf->conf_file->file.name.len) { //配置文件地址 的 长度
+        p = cf->conf_file->file.name.data + cf->conf_file->file.name.len; //从后往前
         while (--p >= cf->conf_file->file.name.data) {
             if (*p == '/' || *p == '\\') {
                 p++;

@@ -445,6 +445,7 @@ extern ngx_os_io_t  ngx_io;
 
 
 #define NGX_EVENT_MODULE      0x544E5645  /* "EVNT" */
+/* event{} blokc里面的命令，如worker_connections、multi_accept */
 #define NGX_EVENT_CONF        0x02000000
 
 
