@@ -1032,6 +1032,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
             ngx_http_lua_assert(orig_coctx->co_top + nrets
                                 == lua_gettop(orig_coctx->co));
 
+            /* 执行堆栈上的函数 */
             rv = lua_resume(orig_coctx->co, nrets);
 
 #if (NGX_PCRE)

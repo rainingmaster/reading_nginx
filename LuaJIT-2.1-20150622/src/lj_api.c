@@ -1269,6 +1269,17 @@ LUA_API int lua_yield(lua_State *L, int nresults)
   return 0;  /* unreachable */
 }
 
+/*
+ * 在给定线程中启动或继续一个 coroutine 。
+ * 要启动一个 coroutine 的话，首先你要创建一个新线程 （参见 lua_newthread ）；
+ * 然后把主函数和若干参数压到新线程的堆栈上；
+ * 最后调用 lua_resume ， 把 narg 设为参数的个数。
+ * 这次调用会在 coroutine 挂起时或是结束运行后返回。
+ * 当函数返回时，堆栈中会有传给 lua_yield 的所有值， 或是主函数的所有返回值。
+ * 如果 coroutine 切换时，lua_resume 返回 LUA_YIELD ，
+ * 而当 coroutine 结束运行且没有任何错误时，返回 0 。
+ * 如果有错则返回错误代码（参见 lua_pcall）。 在发生错误的情况下， 堆栈没有展开， 因此你可以使用 debug API 来处理它。 出错信息放在栈顶。 要继续运行一个 coroutine 的话，你把需要传给 yield 作结果的返回值压入堆栈，然后调用 lua_resume 。  
+ */
 LUA_API int lua_resume(lua_State *L, int nargs)
 {
   if (L->cframe == NULL && L->status <= LUA_YIELD)

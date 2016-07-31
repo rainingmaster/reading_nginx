@@ -36,7 +36,7 @@ ngx_http_lua_atpanic(lua_State *L)
     u_char                  *s = NULL;
     size_t                   len = 0;
 
-    if (lua_type(L, -1) == LUA_TSTRING) {
+    if (lua_type(L, -1) == LUA_TSTRING) { //栈顶为字符串
         s = (u_char *) lua_tolstring(L, -1, &len);
     }
 
@@ -49,7 +49,7 @@ ngx_http_lua_atpanic(lua_State *L)
     ngx_quit = 1;
 
     /*  restore nginx execution */
-    NGX_LUA_EXCEPTION_THROW(1);
+    NGX_LUA_EXCEPTION_THROW(1); //返回到 ngx_http_lua_run_thread 开头
 
     /* impossible to reach here */
 #endif

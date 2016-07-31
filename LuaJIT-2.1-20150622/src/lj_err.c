@@ -749,6 +749,11 @@ LJ_NOINLINE void lj_err_argt(lua_State *L, int narg, int tt)
 
 /* -- Public error handling API ------------------------------------------- */
 
+/*
+ * 设置一个新的 panic （恐慌） 函数，并返回前一个。
+ * 如果在保护环境之外发生了任何错误， Lua 就会调用一个 panic 函数，接着调用 exit(EXIT_FAILURE)， 这样就开始退出宿主程序。 你的 panic 函数可以永远不返回（例如作一次长跳转）来避免程序退出。
+ * panic 函数可以从栈顶取到出错信息。 
+ */
 LUA_API lua_CFunction lua_atpanic(lua_State *L, lua_CFunction panicf)
 {
   lua_CFunction old = G(L)->panic;

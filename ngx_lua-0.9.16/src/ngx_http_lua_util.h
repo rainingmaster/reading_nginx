@@ -349,6 +349,9 @@ ngx_http_lua_get_req(lua_State *L)
 }
 
 
+/*
+ * 将整个 request 作为userdata存在 L 中
+ */
 static ngx_inline void
 ngx_http_lua_set_req(lua_State *L, ngx_http_request_t *r)
 {
@@ -357,6 +360,9 @@ ngx_http_lua_set_req(lua_State *L, ngx_http_request_t *r)
 }
 
 
+/*
+ * 将 lua 中的 _G 放到栈顶
+ */
 static ngx_inline void
 ngx_http_lua_get_globals_table(lua_State *L)
 {
@@ -364,7 +370,10 @@ ngx_http_lua_get_globals_table(lua_State *L)
 }
 
 
-static ngx_inline void
+
+/*
+ * 将栈顶放到 lua 中的 _G 的索引位(栈顶内容作为 _G)
+ */static ngx_inline void
 ngx_http_lua_set_globals_table(lua_State *L)
 {
     lua_replace(L, LUA_GLOBALSINDEX);
