@@ -1005,6 +1005,9 @@ ngx_conf_set_flag_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 }
 
 
+/*
+ * 将第一个参数:字符串放入到cmd->offset对应的conf->x中
+ */
 char *
 ngx_conf_set_str_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -1013,15 +1016,15 @@ ngx_conf_set_str_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_str_t        *field, *value;
     ngx_conf_post_t  *post;
 
-    field = (ngx_str_t *) (p + cmd->offset);
+    field = (ngx_str_t *) (p + cmd->offset);//ngx_command_t的offset作为p的偏移量，一般为一个变量x
 
     if (field->data) {
         return "is duplicate";
     }
 
-    value = cf->args->elts;
+    value = cf->args->elts; //获取指令数组
 
-    *field = value[1];
+    *field = value[1]; //即p->x = 第一个参数
 
     if (cmd->post) {
         post = cmd->post;
@@ -1032,6 +1035,9 @@ ngx_conf_set_str_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 }
 
 
+/*
+ * 将第一个参数:数组放入到cmd->offset对应的conf->x中
+ */
 char *
 ngx_conf_set_str_array_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -1068,7 +1074,10 @@ ngx_conf_set_str_array_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 }
 
 
-char *
+/*
+ * 将第一个参数:键值对放入到cmd->offset对应的conf->x中
+ */
+ char *
 ngx_conf_set_keyval_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
     char  *p = conf;
@@ -1106,6 +1115,9 @@ ngx_conf_set_keyval_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 }
 
 
+/*
+ * 将第一个参数:数字对放入到cmd->offset对应的conf->x中
+ */
 char *
 ngx_conf_set_num_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
