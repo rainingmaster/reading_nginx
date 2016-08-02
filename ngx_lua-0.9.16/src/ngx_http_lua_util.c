@@ -678,6 +678,7 @@ ngx_http_lua_init_registry(lua_State *L, ngx_log_t *log)
 
     /* {{{ register a table to anchor lua coroutines reliably:
      * {([int]ref) = [cort]} */
+    /* 新注册表，其在注册表中的 key 为ngx_http_lua_coroutines_key */
     lua_pushlightuserdata(L, &ngx_http_lua_coroutines_key);
     lua_createtable(L, 0, 32 /* nrec */);
     lua_rawset(L, LUA_REGISTRYINDEX);
@@ -702,6 +703,7 @@ ngx_http_lua_init_registry(lua_State *L, ngx_log_t *log)
 
     /* {{{ register table to cache user code:
      * { [(string)cache_key] = <code closure> } */
+    /* 新注册表，其在注册表中的 key 为ngx_http_lua_code_cache_key */
     lua_pushlightuserdata(L, &ngx_http_lua_code_cache_key);
     lua_createtable(L, 0, 8 /* nrec */);
     lua_rawset(L, LUA_REGISTRYINDEX);
@@ -1032,7 +1034,10 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
             ngx_http_lua_assert(orig_coctx->co_top + nrets
                                 == lua_gettop(orig_coctx->co));
 
-            /* 执行堆栈上的函数 */
+            /* 执行堆栈上的函数
+             * 代码 chunk 在栈顶第 nrets+1 个
+             * 之前 nrets 个为参数
+             */
             rv = lua_resume(orig_coctx->co, nrets);
 
 #if (NGX_PCRE)

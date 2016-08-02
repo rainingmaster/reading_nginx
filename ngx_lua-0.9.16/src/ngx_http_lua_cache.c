@@ -42,12 +42,13 @@ ngx_http_lua_cache_load_code(ngx_http_request_t *r, lua_State *L,
     u_char      *err;
 
     /*  get code cache table */
+    /* 获取 key 为 ngx_http_lua_code_cache_key 的表 */
     lua_pushlightuserdata(L, &ngx_http_lua_code_cache_key);
     lua_rawget(L, LUA_REGISTRYINDEX);    /*  sp++ */
 
     dd("Code cache table to load: %p", lua_topointer(L, -1));
 
-    if (!lua_istable(L, -1)) {
+    if (!lua_istable(L, -1)) { // ngx_http_lua_code_cache_key 的表无效
         dd("Error: code cache table to load did not exist!!");
         return NGX_ERROR;
     }
@@ -55,9 +56,14 @@ ngx_http_lua_cache_load_code(ngx_http_request_t *r, lua_State *L,
     //查找对应代码并推到栈顶
     lua_getfield(L, -1, key);    /*  sp++ */
 
-    //栈顶内容不是function,即没有设置过代码chunk的缓存
+    //栈顶内容是function,即设置过代码chunk的缓存
     if (lua_isfunction(L, -1)) {
         /*  call closure factory to gen new closure */
+        /* 栈顶的function为:
+         * return function() ... 
+         * \nend
+         * 当使用pcall，将上述函数放入栈顶
+         */
         rc = lua_pcall(L, 0, 1, 0);
         if (rc == 0) {
             /*  remove cache table from stack, leave code chunk at
@@ -125,7 +131,9 @@ ngx_http_lua_cache_store_code(lua_State *L, const char *key)
         return NGX_ERROR;
     }
 
+    /* 栈顶值 ngx_http_lua_code_cache_key 表，为将栈顶第2个值，即lua代码，复制压栈 */
     lua_pushvalue(L, -2); /* closure cache closure */
+    /* ngx_http_lua_code_cache_key[key] = code */
     lua_setfield(L, -2, key); /* closure cache */
 
     /*  remove cache table, leave closure factory at top of stack */

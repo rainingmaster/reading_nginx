@@ -970,9 +970,9 @@ LUALIB_API void *luaL_checkudata(lua_State *L, int idx, const char *tname)
 
 /*
  * 操作:   ele    = Stack[index]
- *         value  = Stack.top()
+ *         value  = Stack.top() //第一个值
  *         Stack.pop()
- *         key    = Stack.top()
+ *         key    = Stack.top() //第二个值
  *         Stack.pop()
  *         ele[key] = value
  * 根据index指定取到相应的表; 取栈顶元素做value, 弹出之; 再取当前栈顶元素做key, 亦弹出之; 然后将表的键为key的元素赋值为value

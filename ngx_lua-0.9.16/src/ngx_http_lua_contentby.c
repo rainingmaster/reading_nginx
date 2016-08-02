@@ -63,6 +63,7 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
     }
 
     /*  move code closure to new coroutine */
+    //将栈顶的代码，从 L 拷贝到 co 中
     lua_xmove(L, co, 1);
 
     /*  set closure's env table to new coroutine's globals table */
@@ -184,6 +185,7 @@ ngx_http_lua_content_handler(ngx_http_request_t *r)
         return rc;
     }
 
+    /* 需要读请求体中的内容，且未读请求体中的内容。如 post 的数据 */
     if (llcf->force_read_body && !ctx->read_body_done) {
         r->request_body_in_single_buf = 1;
         r->request_body_in_persistent_file = 1;

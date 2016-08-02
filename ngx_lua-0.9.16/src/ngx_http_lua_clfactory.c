@@ -612,9 +612,9 @@ ngx_http_lua_clfactory_loadfile(lua_State *L, const char *filename)
     lf.extraline = 0;
     lf.file_type = NGX_LUA_TEXT_FILE;
 
-    lf.begin_code.ptr = CLFACTORY_BEGIN_CODE;
+    lf.begin_code.ptr = CLFACTORY_BEGIN_CODE; //return function() 
     lf.begin_code_len = CLFACTORY_BEGIN_SIZE;
-    lf.end_code.ptr = CLFACTORY_END_CODE;
+    lf.end_code.ptr = CLFACTORY_END_CODE; // \nend
     lf.end_code_len = CLFACTORY_END_SIZE;
 
     lua_pushfstring(L, "@%s", filename);
@@ -626,7 +626,7 @@ ngx_http_lua_clfactory_loadfile(lua_State *L, const char *filename)
 
     c = getc(lf.f);
 
-    if (c == '#') {  /* Unix exec. file? */
+    if (c == '#') {  /* Unix exec. file? */ //首字母为 #
         lf.extraline = 1;
 
         while ((c = getc(lf.f)) != EOF && c != '\n') {
@@ -692,11 +692,12 @@ ngx_http_lua_clfactory_loadfile(lua_State *L, const char *filename)
         lf.extraline = 0;
     }
 
-    if (lf.file_type == NGX_LUA_TEXT_FILE) {
-        ungetc(c, lf.f);
+    if (lf.file_type == NGX_LUA_TEXT_FILE) { //文本型文件
+        ungetc(c, lf.f); //一个（或多个）字符退回到输入流
     }
 
     lf.sent_begin = lf.sent_end = 0;
+    //使用 ngx_http_lua_clfactory_getF 解析 lf中的内容，形成代码 chunk，至于栈顶
     status = lua_load(L, ngx_http_lua_clfactory_getF, &lf,
                       lua_tostring(L, -1));
 
@@ -748,7 +749,7 @@ ngx_http_lua_clfactory_getF(lua_State *L, void *ud, size_t *size)
         return "\n";
     }
 
-    if (lf->sent_begin == 0) {
+    if (lf->sent_begin == 0) { //第一次读取块，发送 begin 内容，如return function()
         lf->sent_begin = 1;
         *size = lf->begin_code_len;
 
@@ -762,11 +763,12 @@ ngx_http_lua_clfactory_getF(lua_State *L, void *ud, size_t *size)
         return buf;
     }
 
+    //读取 lf->f 中的内容到 lf->buff 中来
     num = fread(lf->buff, 1, sizeof(lf->buff), lf->f);
 
     dd("fread returned %d", (int) num);
 
-    if (num == 0) {
+    if (num == 0) { //文件内容读取完成
         if (lf->sent_end == 0) {
             lf->sent_end = 1;
             *size = lf->end_code_len;
@@ -778,11 +780,11 @@ ngx_http_lua_clfactory_getF(lua_State *L, void *ud, size_t *size)
                 buf = lf->end_code.ptr;
             }
 
-            return buf;
+            return buf; //发送最后一行 end 内容，如\nend
         }
 
         *size = 0;
-        return NULL;
+        return NULL; //全部读取完成，返回 Null
     }
 
     if (lf->file_type == NGX_LUA_BT_LJ) {
@@ -833,24 +835,24 @@ ngx_http_lua_clfactory_getS(lua_State *L, void *ud, size_t *size)
 {
     ngx_http_lua_clfactory_buffer_ctx_t      *ls = ud;
 
-    if (ls->sent_begin == 0) {
+    if (ls->sent_begin == 0) { //发送第一段 begin 代码
         ls->sent_begin = 1;
-        *size = CLFACTORY_BEGIN_SIZE;
+        *size = CLFACTORY_BEGIN_SIZE; 
 
         return CLFACTORY_BEGIN_CODE;
     }
 
-    if (ls->size == 0) {
-        if (ls->sent_end == 0) {
+    if (ls->size == 0) { //发送完成
+        if (ls->sent_end == 0) { //发送末尾部分
             ls->sent_end = 1;
             *size = CLFACTORY_END_SIZE;
             return CLFACTORY_END_CODE;
         }
 
-        return NULL;
+        return NULL; //全部发送完成
     }
 
-    *size = ls->size;
+    *size = ls->size; //发送代码部分
     ls->size = 0;
 
     return ls->s;
