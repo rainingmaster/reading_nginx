@@ -1056,7 +1056,7 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                            "lua resume returned %d", rv);
 
             switch (rv) {
-            case LUA_YIELD:
+            case LUA_YIELD: //挂起状态，没执行完
                 /*  yielded, let event handler do the rest job */
                 /*  FIXME: add io cmd dispatcher here */
 

@@ -63,7 +63,7 @@ ngx_http_lua_content_by_chunk(lua_State *L, ngx_http_request_t *r)
     }
 
     /*  move code closure to new coroutine */
-    //将栈顶的代码，从 L 拷贝到 co 中
+    //将栈顶的执行代码，从 L 拷贝到 co 的栈顶中
     lua_xmove(L, co, 1);
 
     /*  set closure's env table to new coroutine's globals table */
