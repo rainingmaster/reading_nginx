@@ -751,7 +751,7 @@ ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
 
     ngx_http_lua_inject_log_api(L); /* ngx.log/ngx.print(equal to ngx.log(ngx.NOTICE, ...) */
     ngx_http_lua_inject_output_api(L); /* ngx.print() 等输出功能 */
-    ngx_http_lua_inject_time_api(L); /* ngx.arg.* */
+    ngx_http_lua_inject_time_api(L);
     ngx_http_lua_inject_string_api(L); /* ngx.md5 等字符串操作 */
     ngx_http_lua_inject_control_api(log, L); /* ngx.redirect 等转向功能 */
     /* 子查询功能 */
@@ -771,9 +771,9 @@ ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
     ngx_http_lua_inject_socket_tcp_api(log, L);
     ngx_http_lua_inject_socket_udp_api(log, L);
     ngx_http_lua_inject_uthread_api(log, L);
-    ngx_http_lua_inject_timer_api(L);
+    ngx_http_lua_inject_timer_api(L); /* ngx.timer.at */
     ngx_http_lua_inject_config_api(L);
-    ngx_http_lua_inject_worker_api(L);
+    ngx_http_lua_inject_worker_api(L); /* ngx.pid/ngx.worker */
 
     ngx_http_lua_inject_misc_api(L);
 
@@ -2130,6 +2130,10 @@ ngx_http_lua_inject_req_api(ngx_log_t *log, lua_State *L)
 }
 
 
+/*
+ * 执行 ngx.exec 的内容
+ * 分 named location 和 internal redirect 两种
+ */
 static ngx_int_t
 ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
     ngx_http_lua_ctx_t *ctx)

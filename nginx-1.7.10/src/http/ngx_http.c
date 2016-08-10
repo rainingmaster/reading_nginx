@@ -118,6 +118,7 @@ ngx_module_t  ngx_http_module = {
 
 
 /*
+ * http 的命令解析
  * 在ngx_conf_handler中调用
  * 建立main_conf,loc_conf,scr_conf
  * main级即http层

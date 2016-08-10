@@ -49,6 +49,9 @@ ngx_http_lua_inject_control_api(ngx_log_t *log, lua_State *L)
 }
 
 
+/*
+ * 执行一个 uri
+ */
 static int
 ngx_http_lua_ngx_exec(lua_State *L)
 {
@@ -110,7 +113,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    if (n == 2) {
+    if (n == 2) { //参数个数为2, 包含args
         /* read the 2nd argument (args) */
         dd("args type: %s", luaL_typename(L, 2));
 
@@ -130,7 +133,7 @@ ngx_http_lua_ngx_exec(lua_State *L)
             break;
 
         case LUA_TTABLE:
-            ngx_http_lua_process_args_option(r, L, 2, &user_args);
+            ngx_http_lua_process_args_option(r, L, 2, &user_args); //使用 ngx_http_lua_escape_uri 处理成字符串
 
             dd("user_args: %.*s", (int) user_args.len, user_args.data);
 
