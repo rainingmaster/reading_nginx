@@ -52,7 +52,9 @@ ngx_http_lua_add_package_preload(ngx_conf_t *cf, const char *package,
     }
 
     /* L == NULL */
-
+    /* 如果 L 没有建立，即调用的 module 在 ngx_http_lua_module 前建立
+     * 先存起来，在 L 初始化时再加载
+     */
     if (lmcf->preload_hooks == NULL) {
         lmcf->preload_hooks =
             ngx_array_create(cf->pool, 4,

@@ -3736,7 +3736,8 @@ ngx_http_lua_init_vm(lua_State *parent_vm, ngx_cycle_t *cycle,
         *pcln = cln;
     }
 
-    if (lmcf->preload_hooks) { //预加载的钩子函数
+    /* 在 ngx_http_lua_add_package_preload 中设置 */
+    if (lmcf->preload_hooks) { //如果有预加载的钩子函数
 
         /* register the 3rd-party module's preload hooks */
 

@@ -215,6 +215,7 @@ ngx_http_lua_content_handler(ngx_http_request_t *r)
     ctx->entered_content_phase = 1;
 
     dd("calling content handler");
+    //内容处理函数，可能为 ngx_http_lua_content_handler_inline/ngx_http_lua_content_handler_file
     return llcf->content_handler(r);
 }
 

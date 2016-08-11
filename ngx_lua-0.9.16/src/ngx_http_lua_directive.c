@@ -372,6 +372,9 @@ ngx_http_lua_filter_set_by_lua_file(ngx_http_request_t *r, ngx_str_t *val,
 #endif /* defined(NDK) && NDK */
 
 
+/*
+ * rewrite_by_lua/rewrite_by_lua_file 的命令处理函数
+ */
 char *
 ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -467,6 +470,9 @@ ngx_http_lua_rewrite_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 }
 
 
+/*
+ * access_by_lua/access_by_lua_file 的命令处理函数
+ */
 char *
 ngx_http_lua_access_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -558,6 +564,9 @@ ngx_http_lua_access_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 }
 
 
+/*
+ * content_by_lua/content_by_lua_file 的命令处理函数
+ */
 char *
 ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -663,6 +672,9 @@ ngx_http_lua_content_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 }
 
 
+/*
+ * log_by_lua/log_by_lua_file 的命令处理函数
+ */
 char *
 ngx_http_lua_log_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -753,6 +765,9 @@ ngx_http_lua_log_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 }
 
 
+/*
+ * header_filter_by_lua/header_filter_by_lua_file 的命令处理函数
+ */
 char *
 ngx_http_lua_header_filter_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf)
@@ -834,6 +849,9 @@ ngx_http_lua_header_filter_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 }
 
 
+/*
+ * body_filter_by_lua/body_filter_by_lua_file 的命令处理函数
+ */
 char *
 ngx_http_lua_body_filter_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf)
@@ -916,6 +934,9 @@ ngx_http_lua_body_filter_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 }
 
 
+/*
+ * init_by_lua/init_by_lua_file 的命令处理函数
+ */
 char *
 ngx_http_lua_init_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf)
@@ -964,6 +985,9 @@ ngx_http_lua_init_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 }
 
 
+/*
+ * init_worker_by_lua/init_worker_by_lua_file 的命令处理函数
+ */
 char *
 ngx_http_lua_init_worker_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf)
