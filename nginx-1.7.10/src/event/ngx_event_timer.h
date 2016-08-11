@@ -56,7 +56,7 @@ ngx_event_add_timer(ngx_event_t *ev, ngx_msec_t timer)
     ngx_msec_t      key;
     ngx_msec_int_t  diff;
 
-    key = ngx_current_msec + timer;
+    key = ngx_current_msec + timer; //以时间作为 key，到时间点则执行
 
     if (ev->timer_set) {
 

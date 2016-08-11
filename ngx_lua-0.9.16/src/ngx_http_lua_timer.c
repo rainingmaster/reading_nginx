@@ -80,25 +80,25 @@ ngx_http_lua_ngx_timer_at(lua_State *L)
     ngx_http_core_main_conf_t     *cmcf;
 #endif
 
-    nargs = lua_gettop(L);
+    nargs = lua_gettop(L); //查看堆栈上元素个数，即为参数个数
     if (nargs < 2) {
         return luaL_error(L, "expecting at least 2 arguments but got %d",
                           nargs);
     }
 
-    delay = (ngx_msec_t) (luaL_checknumber(L, 1) * 1000);
+    delay = (ngx_msec_t) (luaL_checknumber(L, 1) * 1000); //第一个参数，timer 延时
 
     luaL_argcheck(L, lua_isfunction(L, 2) && !lua_iscfunction(L, 2), 2,
                  "Lua function expected");
 
-    r = ngx_http_lua_get_req(L);
+    r = ngx_http_lua_get_req(L); //获取 request 结构体
     if (r == NULL) {
         return luaL_error(L, "no request");
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_lua_module);
 
-    if (ngx_exiting && delay > 0) {
+    if (ngx_exiting && delay > 0) { //worker 正在退出
         lua_pushnil(L);
         lua_pushliteral(L, "process exiting");
         return 2;
@@ -106,7 +106,7 @@ ngx_http_lua_ngx_timer_at(lua_State *L)
 
     lmcf = ngx_http_get_module_main_conf(r, ngx_http_lua_module);
 
-    if (lmcf->pending_timers >= lmcf->max_pending_timers) {
+    if (lmcf->pending_timers >= lmcf->max_pending_timers) { //建立中的timer数过多
         lua_pushnil(L);
         lua_pushliteral(L, "too many pending timers");
         return 2;
@@ -140,9 +140,9 @@ ngx_http_lua_ngx_timer_at(lua_State *L)
         lmcf->watcher->data = lmcf;
     }
 
-    vm = ngx_http_lua_get_lua_vm(r, ctx);
+    vm = ngx_http_lua_get_lua_vm(r, ctx); //原始的 lua vm 实例
 
-    co = lua_newthread(vm);
+    co = lua_newthread(vm); //新建一个协程来操作
 
     /* L stack: time func [args] thread */
 
@@ -263,13 +263,14 @@ ngx_http_lua_ngx_timer_at(lua_State *L)
         tctx->vm_state = NULL;
     }
 
+    /* 真正的 timer 处理器 */
     ev->handler = ngx_http_lua_timer_handler;
     ev->data = tctx;
     ev->log = ngx_cycle->log;
 
     lmcf->pending_timers++;
 
-    ngx_add_timer(ev, delay);
+    ngx_add_timer(ev, delay); //将定时器加入到事件中
 
     lua_pushinteger(L, 1);
     return 1;
@@ -292,6 +293,9 @@ nomem:
 }
 
 
+/*
+ * 处理 lua 定时器事件
+ */
 static void
 ngx_http_lua_timer_handler(ngx_event_t *ev)
 {
@@ -326,6 +330,7 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
         goto failed;
     }
 
+    /* 新成一个假的链接 connection，方便之后复用 ngx.log 等方法 */
     c = ngx_http_lua_create_fake_connection(tctx.pool);
     if (c == NULL) {
         goto failed;
@@ -337,6 +342,7 @@ ngx_http_lua_timer_handler(ngx_event_t *ev)
     c->listening = tctx.listening;
     c->addr_text = tctx.client_addr_text;
 
+    /* 同上面的 fake_connection */
     r = ngx_http_lua_create_fake_request(c);
     if (r == NULL) {
         goto failed;

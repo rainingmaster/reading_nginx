@@ -3015,6 +3015,7 @@ ngx_http_get_forwarded_addr_internal(ngx_http_request_t *r, ngx_addr_t *addr,
 
 
 /*
+ * server 命令的处理函数
  * 生成server级的命令预设
  * 为server/server_name的set函数
  * 每个server的ctx->main_conf都是ngx_http_conf_t中的main_conf，全局仅仅一个main_conf
@@ -3147,6 +3148,7 @@ ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 
 
 /*
+ * location 命令的处理函数
  * 生成location级的命令预设
  * 为location的set函数
  * 每个location的ctx->main_conf都是ngx_http_conf_t中的main_conf，全局仅仅一个main_conf
@@ -3335,7 +3337,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     }
 
     save = *cf;
-    cf->ctx = ctx;
+    cf->ctx = ctx; //将本层新建的 ctx 作为下一层的 cf 传入
     cf->cmd_type = NGX_HTTP_LOC_CONF;
 
     rv = ngx_conf_parse(cf, NULL);

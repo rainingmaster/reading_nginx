@@ -984,9 +984,10 @@ ngx_http_lua_init_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     return NGX_CONF_OK;
 }
 
-
 /*
  * init_worker_by_lua/init_worker_by_lua_file 的命令处理函数
+ * 建立 worker 阶段
+ * 其 log 将实用的是全局级 main 的 error_log，而不是 http 级的
  */
 char *
 ngx_http_lua_init_worker_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,

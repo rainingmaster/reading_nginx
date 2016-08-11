@@ -68,7 +68,7 @@ ngx_conf_param(ngx_conf_t *cf)
 
     param = &cf->cycle->conf_param;
 
-    if (param->len == 0) {
+    if (param->len == 0) { //查看是否有启动时带的参数
         return NGX_CONF_OK;
     }
 
@@ -82,7 +82,7 @@ ngx_conf_param(ngx_conf_t *cf)
     b.end = b.last;
     b.temporary = 1;
 
-    conf_file.file.fd = NGX_INVALID_FILE;
+    conf_file.file.fd = NGX_INVALID_FILE; //非正常文件
     conf_file.file.name.data = NULL;
     conf_file.line = 0;
 
@@ -166,7 +166,7 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
         type = parse_block; //解析块中 {}
 
     } else {
-        type = parse_param; //解析参数中
+        type = parse_param; //解析参数中，即启动时带的参数
     }
 
 
@@ -285,7 +285,7 @@ done:
 
 
 /*
- * 在ngx_config_parse中调用
+ * 在 ngx_conf_parse 中调用
  * 使用cf中的参数，暴力查找调用对应函数
  * 此时的cf->ctx为cycle->conf_ctx
  */

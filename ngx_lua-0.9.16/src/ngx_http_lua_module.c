@@ -463,6 +463,7 @@ ngx_module_t ngx_http_lua_module = {
 
 
 /*
+ * ngx_http_block 中调用
  * ngx_http_lua_module 中 ngx_http_lua_module_ctx 的 postconfiguration 执行函数
  */
 static ngx_int_t
