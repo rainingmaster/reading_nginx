@@ -974,10 +974,9 @@ ngx_http_core_rewrite_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
 
 
 /*
- * 获取配置阶段
- * 此阶段返回NGX_OK或r->phase_handler后移；
- * next为0，不设置
- * 无handler
+ * 获取 location 的配置阶段
+ * 相当于为请求做一个路由
+ * 此阶段返回NGX_OK或r->phase_handler后移；next为0，不设置；无handler
  */
 ngx_int_t
 ngx_http_core_find_config_phase(ngx_http_request_t *r,
@@ -991,6 +990,7 @@ ngx_http_core_find_config_phase(ngx_http_request_t *r,
     r->content_handler = NULL;
     r->uri_changed = 0;
 
+    //查找对应的 location
     rc = ngx_http_core_find_location(r);
 
     if (rc == NGX_ERROR) {
@@ -1010,7 +1010,7 @@ ngx_http_core_find_config_phase(ngx_http_request_t *r,
                    (clcf->noname ? "*" : (clcf->exact_match ? "=" : "")),
                    &clcf->name);
 
-    //更新location级配置到request中去
+    //更新 location 级配置到 request 中去
     ngx_http_update_location_config(r);
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -3040,7 +3040,7 @@ ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     }
 
     http_ctx = cf->ctx;
-    ctx->main_conf = http_ctx->main_conf;
+    ctx->main_conf = http_ctx->main_conf; //获取上一级的 main_conf
 
     /* the server{}'s srv_conf */
 
@@ -3091,6 +3091,12 @@ ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 
     cmcf = ctx->main_conf[ngx_http_core_module.ctx_index];
 
+    /*
+     * 往 core_module_conf->servers 中加入 core_srv_conf 内容
+     * 多个 server 则数组有多个内容
+     * cmcf->servers[0]->ctx 为 ngx_http_conf_ctx_t
+     * 是本级收集到的 srv_conf[] / loc_conf[]
+     */
     cscfp = ngx_array_push(&cmcf->servers);
     if (cscfp == NULL) {
         return NGX_CONF_ERROR;
@@ -3109,7 +3115,7 @@ ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 
     *cf = pcf;
 
-    if (rv == NGX_CONF_OK && !cscf->listen) {
+    if (rv == NGX_CONF_OK && !cscf->listen) { //配置监听的地址
         ngx_memzero(&lsopt, sizeof(ngx_http_listen_opt_t));
 
         sin = &lsopt.u.sockaddr_in;
@@ -3150,8 +3156,7 @@ ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 /*
  * location 命令的处理函数
  * 生成location级的命令预设
- * 为location的set函数
- * 每个location的ctx->main_conf都是ngx_http_conf_t中的main_conf，全局仅仅一个main_conf
+ * 每个location的ctx->main_conf都是ngx_http_conf_t中的main_conf
  */
 static char *
 ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
@@ -3196,14 +3201,24 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         }
     }
 
-    //core_location_conf的loc_conf为ctx->loc_conf，保留上下文
+    /*
+     * core_location_conf 的 loc_conf 为 ctx->loc_conf，保留上下文，也仅需保留 loc_conf[] 了
+     */
     clcf = ctx->loc_conf[ngx_http_core_module.ctx_index];
     clcf->loc_conf = ctx->loc_conf;
 
     value = cf->args->elts;
 
+    /*
+     * 分析 loction 参数
+     */
     if (cf->args->nelts == 3) {
-
+        /*
+         * 0:location
+         * 1:正则规则
+         * 2:uri
+         * location [ = | ~ | ~* | ^~ ] uri { ... }
+         */
         len = value[1].len;
         mod = value[1].data;
         name = &value[2];
@@ -3237,6 +3252,11 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         }
 
     } else {
+        /*
+         * 0:location
+         * 1:name
+         * location @name { ... }
+         */
 
         name = &value[1];
 
@@ -3282,6 +3302,13 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         }
     }
 
+    /* 
+     * main_conf[ngx_http_core_module.ctx_index](ngx_http_core_main_conf_t)
+     *  -> ctx(ngx_http_conf_ctx_t*)
+     *    -> svr_conf[ngx_http_core_module.ctx_index](ngx_http_core_srv_conf_t)
+     *       -> ctx(ngx_http_conf_ctx_t*)
+     *         -> loc_conf[ngx_http_core_module.ctx_index]
+     */
     pclcf = pctx->loc_conf[ngx_http_core_module.ctx_index];
 
     if (pclcf->name.len) {
@@ -3332,6 +3359,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         }
     }
 
+    //将本级的 loc_conf ，即 clcf->ctx ，赋予到 pclcf->locations 中，其中 pclcf->locations 是个 queue
     if (ngx_http_add_location(cf, &pclcf->locations, clcf) != NGX_OK) {
         return NGX_CONF_ERROR;
     }

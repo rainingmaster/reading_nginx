@@ -386,7 +386,6 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
 
             conf = NULL;
 
-            //此时的cf->ctx为cycle->conf_ctx
             if (cmd->type & NGX_DIRECT_CONF) {
                 conf = ((void **) cf->ctx)[ngx_modules[i]->index];
 
@@ -394,7 +393,7 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
                 //获取指针，在下面的cmd->set方法中将修改本值，即此时才获取conf值
                 conf = &(((void **) cf->ctx)[ngx_modules[i]->index]);
 
-            } else if (cf->ctx) {
+            } else if (cf->ctx) { //block 之间传递一般为此类，cmd->conf 则为0
                 confp = *(void **) ((char *) cf->ctx + cmd->conf);
 
                 if (confp) {

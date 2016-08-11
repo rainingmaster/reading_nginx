@@ -461,7 +461,7 @@ struct ngx_http_core_loc_conf_s {
     ngx_uint_t    types_hash_max_size;
     ngx_uint_t    types_hash_bucket_size;
 
-    ngx_queue_t  *locations;
+    ngx_queue_t  *locations; //记录本级 server 中各个 location 的信息，使用 queue
 
 #if 0
     ngx_http_core_loc_conf_t  *prev_location;

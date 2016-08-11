@@ -465,11 +465,12 @@ ngx_module_t ngx_http_lua_module = {
 /*
  * ngx_http_block 中调用
  * ngx_http_lua_module 中 ngx_http_lua_module_ctx 的 postconfiguration 执行函数
+ * 将挂上各个 rewrite、access 处理函数
  */
 static ngx_int_t
 ngx_http_lua_init(ngx_conf_t *cf)
 {
-    int                         multi_http_blocks;
+    int                         multi_http_blocks; //拥有多个 http{}
     ngx_int_t                   rc;
     ngx_array_t                *arr;
     ngx_http_handler_pt        *h;
@@ -499,7 +500,8 @@ ngx_http_lua_init(ngx_conf_t *cf)
 
     cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
 
-    if (lmcf->requires_rewrite) {
+    if (lmcf->requires_rewrite) { //需要加上 rewrite 处理阶段
+        /* 将 ngx_http_lua_rewrite_handler push 到 NGX_HTTP_REWRITE_PHASE 阶段 */
         h = ngx_array_push(&cmcf->phases[NGX_HTTP_REWRITE_PHASE].handlers);
         if (h == NULL) {
             return NGX_ERROR;
@@ -508,7 +510,8 @@ ngx_http_lua_init(ngx_conf_t *cf)
         *h = ngx_http_lua_rewrite_handler;
     }
 
-    if (lmcf->requires_access) {
+    if (lmcf->requires_access) { //需要加上 access 处理阶段
+        /* 将 ngx_http_lua_access_handler push 到 NGX_HTTP_ACCESS_PHASE 阶段 */
         h = ngx_array_push(&cmcf->phases[NGX_HTTP_ACCESS_PHASE].handlers);
         if (h == NULL) {
             return NGX_ERROR;
@@ -519,14 +522,14 @@ ngx_http_lua_init(ngx_conf_t *cf)
 
     dd("requires log: %d", (int) lmcf->requires_log);
 
-    if (lmcf->requires_log) {
+    if (lmcf->requires_log) { //需要加上 log 处理阶段
         arr = &cmcf->phases[NGX_HTTP_LOG_PHASE].handlers;
         h = ngx_array_push(arr);
         if (h == NULL) {
             return NGX_ERROR;
         }
 
-        if (arr->nelts > 1) {
+        if (arr->nelts > 1) { //保持只有 1 个 log_handler
             h = arr->elts;
             ngx_memmove(&h[1], h,
                         (arr->nelts - 1) * sizeof(ngx_http_handler_pt));
@@ -656,6 +659,10 @@ ngx_http_lua_create_main_conf(ngx_conf_t *cf)
 }
 
 
+/*
+ * 建立 lua 的 main_conf
+ * 如果在 ngx_http_block 中解析命令没有设置下列值，则使用默认值
+ */
 static char *
 ngx_http_lua_init_main_conf(ngx_conf_t *cf, void *conf)
 {
@@ -750,6 +757,10 @@ ngx_http_lua_create_loc_conf(ngx_conf_t *cf)
 }
 
 
+/*
+ * 合并 lua_module 中的 location 级设置
+ * 主要为各个处理脚本的上级 parent 覆盖下级 child
+ */
 static char *
 ngx_http_lua_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 {

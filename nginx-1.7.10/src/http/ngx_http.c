@@ -193,14 +193,36 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
      * create the main_conf's, the null srv_conf's, and the null loc_conf's
      * of the all http modules
      */
+    /*
+     * 设置的结构相当于:
+     * http{
+     *      ...
+     *      ...
+     *      各个 module 的 [http_conf]、(空的 sever_conf)、(空的 location_conf)
+     *      server{
+     *          ...
+     *          ...
+     *          各个 module 的 [sever_conf]、(空的 location_conf)
+     *           location{
+     *                 ...
+     *                 ...
+     *                 各个 module 的 [location_conf]
+     *            }
+     *      }
+     * }
+     * 其中空的子级配置供各个方法存放本级的设置，最后在最后一级用 *_merge_* 合并
+     */
 
+    /*
+     * 建立空的 srv 和loc 配置，相当于 http 下面也有一个 location
+     */
     for (m = 0; ngx_modules[m]; m++) {
         if (ngx_modules[m]->type != NGX_HTTP_MODULE) {
             continue;
         }
 
         module = ngx_modules[m]->ctx;
-        mi = ngx_modules[m]->ctx_index; //也是按照0,1,2...增加，且与module中位置对应
+        mi = ngx_modules[m]->ctx_index; //也是按照 0,1,2... 增加，且与 module 中位置对应
 
         if (module->create_main_conf) {
             ctx->main_conf[mi] = module->create_main_conf(cf);
@@ -247,7 +269,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     cf->module_type = NGX_HTTP_MODULE;
     cf->cmd_type = NGX_HTTP_MAIN_CONF;
-    rv = ngx_conf_parse(cf, NULL);
+    rv = ngx_conf_parse(cf, NULL); //读取完 http {} 内命令
 
     if (rv != NGX_CONF_OK) {
         goto failed;
@@ -320,7 +342,9 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
 
-    //执行conf后置函数
+    /*
+     * 执行conf后置函数
+     */
     for (m = 0; ngx_modules[m]; m++) {
         if (ngx_modules[m]->type != NGX_HTTP_MODULE) {
             continue;
@@ -488,7 +512,7 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 
     //cmcf为ngx_http_core_create_main_conf(cf)的返回值
 
-    //设置为 "未设置值"   
+    //server 级的重新和 location 级的重写，设置为 "未设置值"
     cmcf->phase_engine.server_rewrite_index = (ngx_uint_t) -1; //设置为最大的整形
     cmcf->phase_engine.location_rewrite_index = (ngx_uint_t) -1; //设置为最大的整形
     find_config_index = 0;
@@ -515,16 +539,22 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
      * 一个二维数组，转成了一维数组
      */
     cmcf->phase_engine.handlers = ph;
-    //赋予到ph->next中，用于一维数组的状态跳转
+    //将赋予到 ph->next 中，用于一维数组的状态跳转
     n = 0;
 
-    /* 除了NGX_HTTP_LOG_PHASE外所有htt阶段 */
+    /* 除了 NGX_HTTP_LOG_PHASE 外所有 http 阶段 */
     for (i = 0; i < NGX_HTTP_LOG_PHASE; i++) {
-        h = cmcf->phases[i].handlers.elts; //会在NGX_HTTP_MODULE的postconfiguration函数中填充
+        /*
+         * 对应阶段的处理函数，大多将赋予到ph->handler。见最下面的循环
+         * 会在各个 NGX_HTTP_MODULE 的 postconfiguration 函数中填充
+         */
+        h = cmcf->phases[i].handlers.elts;
         
-        //使用break将跳出本switch但仍将执行for循环的剩余语句；
-        //使用continue则直接跳至i++进行下一次for循环执行；
-        /* 按照原来的http执行顺序处理 */
+        /* 
+         * 使用break将跳出本switch但仍将执行for循环的剩余语句；
+         * 使用continue则直接跳至i++进行下一次for循环执行；
+         * 按照原来的http执行顺序处理
+         */
         switch (i) {
         /*在cmcf->phase_engine.handlers中的起始index*/
         /*index=0*/case NGX_HTTP_SERVER_REWRITE_PHASE: //*1
@@ -611,7 +641,7 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
         //填充数组
         for (j = cmcf->phases[i].handlers.nelts - 1; j >=0; j--) {
             ph->checker = checker;
-            ph->handler = h[j]; //指向cmcf->phases[i].handlers.elts，从后往前填充
+            ph->handler = h[j]; //指向cmcf->phases[i].handlers.elts，逆序，从后往前填充
             ph->next = n; //下一个阶段phases中第一个handlers的索引，本ph的都固定
             ph++;
         }
@@ -622,9 +652,9 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 
 
 /*
- * 合并服务配置
- * 在ngx_http_block中调用
- * 包括合并svr级和loc级，设置是按照不同module独立的
+ * 按照各个 http_*_module 合并 server 级配置
+ * 在 ngx_http_block 中调用
+ * 包括合并 svr 级和 loc 级，设置是按照不同 module 独立的
  */
 static char *
 ngx_http_merge_servers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
@@ -641,13 +671,14 @@ ngx_http_merge_servers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
     saved = *ctx;
     rv = NGX_CONF_OK;
 
+    //遍历所有 core_server_conf
     for (s = 0; s < cmcf->servers.nelts; s++) {
 
         /* merge the server{}s' srv_conf's */
 
         ctx->srv_conf = cscfp[s]->ctx->srv_conf;
 
-        //调用每个module的merge_srv_conf合并srv配置方法
+        //调用每个 module 的 merge_srv_conf 合并srv配置方法
         if (module->merge_srv_conf) {
             rv = module->merge_srv_conf(cf, saved.srv_conf[ctx_index],
                                         cscfp[s]->ctx->srv_conf[ctx_index]);
@@ -655,7 +686,8 @@ ngx_http_merge_servers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
                 goto failed;
             }
         }
-        
+
+        //按照各个 http_*_module 合并 location 级配置
         if (module->merge_loc_conf) {
 
             /* merge the server{}'s loc_conf */
@@ -689,6 +721,9 @@ failed:
 }
 
 
+/*
+ * 按照各个 http_*_module 合并 location 级配置
+ */
 static char *
 ngx_http_merge_locations(ngx_conf_t *cf, ngx_queue_t *locations,
     void **loc_conf, ngx_http_module_t *module, ngx_uint_t ctx_index)
@@ -912,6 +947,11 @@ ngx_http_init_static_location_trees(ngx_conf_t *cf,
 }
 
 
+/*
+ * 添加 location 站点
+ * 将在 locations 上建立一个 queue
+ * 将 clcf 的信息赋予到 lq (ngx_http_location_queue_t) 中
+ */
 ngx_int_t
 ngx_http_add_location(ngx_conf_t *cf, ngx_queue_t **locations,
     ngx_http_core_loc_conf_t *clcf)

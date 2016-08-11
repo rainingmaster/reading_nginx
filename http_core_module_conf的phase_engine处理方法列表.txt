@@ -1,18 +1,33 @@
-(gdb) p ((ngx_http_phase_handler_t*)(cmcf->phase_engine.handlers))[5]
-$90 = {checker = 0x458eed <ngx_http_core_post_rewrite_phase>, handler = 0, next = 2}
-(gdb) p ((ngx_http_phase_handler_t*)(cmcf->phase_engine.handlers))[6]
-$91 = {checker = 0x4588d4 <ngx_http_core_generic_phase>, handler = 0x4abc14 <ngx_http_limit_req_handler>, next = 8}
-(gdb) p ((ngx_http_phase_handler_t*)(cmcf->phase_engine.handlers))[7]
-$92 = {checker = 0x4588d4 <ngx_http_core_generic_phase>, handler = 0x4aaa88 <ngx_http_limit_conn_handler>, next = 8}
-(gdb) p ((ngx_http_phase_handler_t*)(cmcf->phase_engine.handlers))[8]
-$93 = {checker = 0x4590de <ngx_http_core_access_phase>, handler = 0x4aa3cc <ngx_http_access_handler>, next = 11}
-(gdb) p ((ngx_http_phase_handler_t*)(cmcf->phase_engine.handlers))[9]
-$94 = {checker = 0x4590de <ngx_http_core_access_phase>, handler = 0x4a9734 <ngx_http_auth_basic_handler>, next = 11}
-(gdb) p ((ngx_http_phase_handler_t*)(cmcf->phase_engine.handlers))[10]
-$95 = {checker = 0x4592f6 <ngx_http_core_post_access_phase>, handler = 0, next = 11}
-(gdb) p ((ngx_http_phase_handler_t*)(cmcf->phase_engine.handlers))[11]
-$96 = {checker = 0x459d3b <ngx_http_core_content_phase>, handler = 0x48e31c <ngx_http_index_handler>, next = 14}
-(gdb) p ((ngx_http_phase_handler_t*)(cmcf->phase_engine.handlers))[12]
-$97 = {checker = 0x459d3b <ngx_http_core_content_phase>, handler = 0x4a7070 <ngx_http_autoindex_handler>, next = 14}
-(gdb) p ((ngx_http_phase_handler_t*)(cmcf->phase_engine.handlers))[13]
-$98 = {checker = 0x459d3b <ngx_http_core_content_phase>, handler = 0x48d96c <ngx_http_static_handler>, next = 14}
+//NGX_HTTP_POST_READ_PHASE 阶段无内容
+(gdb) p cmcf->phase_engine.handlers[0] //server 级的重写
+$38 = {checker = 0x458a07 <ngx_http_core_rewrite_phase>, handler = 0x4de0a4 <ngx_coolkit_override_method_handler>, next = 2}
+(gdb) p cmcf->phase_engine.handlers[1]
+$39 = {checker = 0x458a07 <ngx_http_core_rewrite_phase>, handler = 0x4b3a60 <ngx_http_rewrite_handler>, next = 2}
+(gdb) p cmcf->phase_engine.handlers[2] //查找配置，根据uri寻找location，类似于路由
+$40 = {checker = 0x458acc <ngx_http_core_find_config_phase>, handler = 0, next = 0}
+(gdb) p cmcf->phase_engine.handlers[3] //location 级的重写
+$41 = {checker = 0x458a07 <ngx_http_core_rewrite_phase>, handler = 0x50fac0 <ngx_http_lua_rewrite_handler>, next = 6}
+(gdb) p cmcf->phase_engine.handlers[4]
+$42 = {checker = 0x458a07 <ngx_http_core_rewrite_phase>, handler = 0x4de0a4 <ngx_coolkit_override_method_handler>, next = 6}
+(gdb) p cmcf->phase_engine.handlers[5]
+$43 = {checker = 0x458a07 <ngx_http_core_rewrite_phase>, handler = 0x4b3a60 <ngx_http_rewrite_handler>, next = 6}
+(gdb) p cmcf->phase_engine.handlers[6]
+$44 = {checker = 0x458f2d <ngx_http_core_post_rewrite_phase>, handler = 0, next = 2}
+(gdb) p cmcf->phase_engine.handlers[7]
+$45 = {checker = 0x458914 <ngx_http_core_generic_phase>, handler = 0x4abc54 <ngx_http_limit_req_handler>, next = 9}
+(gdb) p cmcf->phase_engine.handlers[8]
+$46 = {checker = 0x458914 <ngx_http_core_generic_phase>, handler = 0x4aaac8 <ngx_http_limit_conn_handler>, next = 9}
+(gdb) p cmcf->phase_engine.handlers[9]
+$47 = {checker = 0x45911e <ngx_http_core_access_phase>, handler = 0x4aa40c <ngx_http_access_handler>, next = 12}
+(gdb) p cmcf->phase_engine.handlers[10]
+$48 = {checker = 0x45911e <ngx_http_core_access_phase>, handler = 0x4a9774 <ngx_http_auth_basic_handler>, next = 12}
+(gdb) p cmcf->phase_engine.handlers[11]
+$49 = {checker = 0x459336 <ngx_http_core_post_access_phase>, handler = 0, next = 12}
+(gdb) p cmcf->phase_engine.handlers[12]
+$50 = {checker = 0x459d7b <ngx_http_core_content_phase>, handler = 0x48e35c <ngx_http_index_handler>, next = 15}
+(gdb) p cmcf->phase_engine.handlers[13]
+$51 = {checker = 0x459d7b <ngx_http_core_content_phase>, handler = 0x4a70b0 <ngx_http_autoindex_handler>, next = 15}
+(gdb) p cmcf->phase_engine.handlers[14]
+$52 = {checker = 0x459d7b <ngx_http_core_content_phase>, handler = 0x48d9ac <ngx_http_static_handler>, next = 15}
+(gdb) p cmcf->phase_engine.handlers[15]
+$53 = {checker = 0, handler = 0, next = 0}
