@@ -3018,7 +3018,7 @@ ngx_http_get_forwarded_addr_internal(ngx_http_request_t *r, ngx_addr_t *addr,
  * server 命令的处理函数
  * 生成server级的命令预设
  * 为server/server_name的set函数
- * 每个server的ctx->main_conf都是ngx_http_conf_t中的main_conf，全局仅仅一个main_conf
+ * 每个server的ctx->main_conf都是ngx_http_conf_t中的main_conf
  */
 static char *
 ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
@@ -3155,8 +3155,8 @@ ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 
 /*
  * location 命令的处理函数
- * 生成location级的命令预设
- * 每个location的ctx->main_conf都是ngx_http_conf_t中的main_conf
+ * 生成location级的命令预设，存在 pclcf->locations，一个 queue 中
+ * 每条命令解析链条下的 main_conf 都是 ngx_http_block 中生成的main_conf
  */
 static char *
 ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
@@ -3177,8 +3177,8 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     }
 
     pctx = cf->ctx;
-    ctx->main_conf = pctx->main_conf;
-    ctx->srv_conf = pctx->srv_conf;
+    ctx->main_conf = pctx->main_conf; //使用上级 main_conf
+    ctx->srv_conf = pctx->srv_conf; //使用上级 srv_conf
 
     ctx->loc_conf = ngx_pcalloc(cf->pool, sizeof(void *) * ngx_http_max_module);
     if (ctx->loc_conf == NULL) {
@@ -3203,6 +3203,11 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 
     /*
      * core_location_conf 的 loc_conf 为 ctx->loc_conf，保留上下文，也仅需保留 loc_conf[] 了
+     * 合并前的过程
+     * main_conf[ngx_http_core_module.ctx_index](ngx_http_core_main_conf_t)
+     *  -> servers.elts
+     *    -> ctx(ngx_http_conf_ctx_t*)
+     *       -> loc_conf[ngx_http_core_module.ctx_index]
      */
     clcf = ctx->loc_conf[ngx_http_core_module.ctx_index];
     clcf->loc_conf = ctx->loc_conf;
@@ -3302,16 +3307,9 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         }
     }
 
-    /* 
-     * main_conf[ngx_http_core_module.ctx_index](ngx_http_core_main_conf_t)
-     *  -> ctx(ngx_http_conf_ctx_t*)
-     *    -> svr_conf[ngx_http_core_module.ctx_index](ngx_http_core_srv_conf_t)
-     *       -> ctx(ngx_http_conf_ctx_t*)
-     *         -> loc_conf[ngx_http_core_module.ctx_index]
-     */
     pclcf = pctx->loc_conf[ngx_http_core_module.ctx_index];
 
-    if (pclcf->name.len) {
+    if (pclcf->name.len) { //嵌套式的 location block
 
         /* nested location */
 

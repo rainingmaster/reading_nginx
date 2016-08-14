@@ -142,12 +142,16 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    *(ngx_http_conf_ctx_t **) conf = ctx; //带回给上一级ngx_conf_handler，将存在cycle->conf_ctx中
+    /*
+     * 分级存储所有main/srv/loc
+     * 配置带回给上一级ngx_conf_handler，将存在cycle->conf_ctx中
+     */
+    *(ngx_http_conf_ctx_t **) conf = ctx;
 
 
     /* count the number of the http modules and set up their indices */
 
-    //算出http模块的数量，存在全局变量中
+    //算出 http 模块的索引，存在全局变量中
     ngx_http_max_module = 0;
     for (m = 0; ngx_modules[m]; m++) {
         if (ngx_modules[m]->type != NGX_HTTP_MODULE) {
@@ -246,7 +250,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         }
     }
 
-    //暂存之前的conf，后面会使用上面新生成的ctx
+    //暂存之前的conf，会使用上面新生成的 ctx 解析 block 中的命令
     pcf = *cf;
     cf->ctx = ctx;
 
@@ -307,13 +311,21 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             }
         }
 
-        //填充cmcf->servers
+        //合并cmcf->servers
         rv = ngx_http_merge_servers(cf, cmcf, module, mi);
         if (rv != NGX_CONF_OK) {
             goto failed;
         }
     }
 
+    /* 
+     * 合并完的状态:
+     * main_conf[ngx_http_core_module.ctx_index]  (ngx_http_core_main_conf_t)
+     *  -> servers.elts 指向数组 (ngx_http_core_srv_conf_t)
+     *    -> ctx  (ngx_http_conf_ctx_t*)
+     *      -> loc_conf[ngx_http_core_module.ctx_index]  (ngx_http_core_loc_conf_t)
+     *        -> locations (queue)
+     */
 
     /* create location trees */
 

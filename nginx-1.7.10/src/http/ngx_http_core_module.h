@@ -165,14 +165,15 @@ typedef struct {
     对应每个阶段的处理方法
 */
 typedef struct {
-    ngx_array_t                handlers; //各个阶段的handler处理方法
+    ngx_array_t                handlers; //各个阶段的 handlers 处理器数组
 } ngx_http_phase_t;
 
 
 typedef struct {
+    /* elts 值为 ngx_http_core_srv_conf_t 数组的首地址*/
     ngx_array_t                servers;         /* ngx_http_core_srv_conf_t */
 
-    ngx_http_phase_engine_t    phase_engine;
+    ngx_http_phase_engine_t    phase_engine; /* 最终执行时调用的各个阶段 handler */
 
     ngx_hash_t                 headers_in_hash;
 
@@ -193,6 +194,7 @@ typedef struct {
 
     ngx_uint_t                 try_files;       /* unsigned  try_files:1 */
 
+    //各个阶段 的 处理器 handlers 数组，将整理为二位数组 放到 phase_engine
     ngx_http_phase_t           phases[NGX_HTTP_LOG_PHASE + 1];
 } ngx_http_core_main_conf_t;
 
@@ -202,7 +204,7 @@ typedef struct {
     ngx_array_t                 server_names;
 
     /* server ctx */
-    ngx_http_conf_ctx_t        *ctx;
+    ngx_http_conf_ctx_t        *ctx; //ngx_http_conf_ctx_t
 
     ngx_str_t                   server_name;
 
