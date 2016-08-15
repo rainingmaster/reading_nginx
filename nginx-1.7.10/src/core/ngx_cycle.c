@@ -182,7 +182,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
     ngx_queue_init(&cycle->reusable_connections_queue);
 
 
-    //申请空间建立conf_ctx数组，存储各个modules的conf
+    //申请空间建立conf_ctx数组，存储各个 modules 的conf，主要为 http(main)、server、location 各级配置
     cycle->conf_ctx = ngx_pcalloc(pool, ngx_max_module * sizeof(void *));
     if (cycle->conf_ctx == NULL) {
         ngx_destroy_pool(pool);
@@ -246,7 +246,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
     }
 
 
-    conf.ctx = cycle->conf_ctx;
+    conf.ctx = cycle->conf_ctx; //最后仅需保存这份 ctx
     conf.cycle = cycle;
     conf.pool = pool;
     conf.log = log;
@@ -264,7 +264,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         return NULL;
     }
 
-    //解析 conf 配置文件
+    //解析 conf 配置文件，建立对应的 http(main)、server、location 配置
     if (ngx_conf_parse(&conf, &cycle->conf_file) != NGX_CONF_OK) {
         environ = senv;
         ngx_destroy_cycle_pools(&conf);

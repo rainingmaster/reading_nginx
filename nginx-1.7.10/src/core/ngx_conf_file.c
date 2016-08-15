@@ -287,7 +287,7 @@ done:
 /*
  * 在 ngx_conf_parse 中调用
  * 使用cf中的参数，暴力查找调用对应函数
- * 此时的cf->ctx为cycle->conf_ctx
+ * 此时的cf->ctx为在每个命令的 block{} 中将不同
  */
 static ngx_int_t
 ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)

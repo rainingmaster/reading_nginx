@@ -44,7 +44,10 @@ ngx_array_destroy(ngx_array_t *a)
 }
 
 
-/* 往数组中加入元素 */
+/*
+ * 往数组中加入元素
+ * 注意: (u_char *) a->elts 的值才是数组首地址，elts是数组指针
+ */
 void *
 ngx_array_push(ngx_array_t *a)
 {
@@ -86,7 +89,7 @@ ngx_array_push(ngx_array_t *a)
         }
     }
 
-    elt = (u_char *) a->elts + a->size * a->nelts;//新模块地址=数组起始指针elts+结构体大小size*数组之前长度
+    elt = (u_char *) a->elts + a->size * a->nelts;//新模块地址=elts指向的数组起始指针+结构体大小size*数组之前长度
     a->nelts++;//数组长度加1
 
     return elt; //返回新元素的地址
