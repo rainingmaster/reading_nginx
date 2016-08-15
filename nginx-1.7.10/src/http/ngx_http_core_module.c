@@ -1479,7 +1479,7 @@ ngx_http_core_content_phase(ngx_http_request_t *r,
 
 /*
  * 更新location级的conf到requrest中
- * 在ngx_http_core_find_config_phase中会调用
+ * 在 ngx_http_core_find_config_phase 中会调用
  */
 void
 ngx_http_update_location_config(ngx_http_request_t *r)

@@ -440,8 +440,10 @@ struct ngx_http_request_s {
     //所有的子请求都是通过这个单链表链接起来的
     ngx_http_posted_request_t        *posted_requests;
 
-    /*全局的ngx_http_phase_engine_t结构体中定义了一个ngx_http_phase_handler_t回答方法组成的数组。 
-     * 而phase_handler成员则与该数组配合使用。表示请求下次应当执行phase_handler作为序列号指定的数组中的回调方法*/
+    /*
+     * 全局的ngx_http_phase_engine_t结构体中定义了一个ngx_http_phase_handler_t回答方法组成的数组。 
+     * 而phase_handler成员则与该数组配合使用。表示请求下次应当执行phase_handler作为序列号指定的数组中的回调方法
+     */
     ngx_int_t                         phase_handler;
     //表示NGX_HTTP_CONTENT_PHASE阶段提供给http模块处理请求的一种方式，它指向http模块实现的请求处理方法
     ngx_http_handler_pt               content_handler;
@@ -467,7 +469,7 @@ struct ngx_http_request_s {
 
     ngx_uint_t                        err_status;
 
-    //对应的http结构体，注意，与ngx_connection_t不同
+    //对应的 http 结构体，注意，与ngx_connection_t不同
     ngx_http_connection_t            *http_connection;
 #if (NGX_HTTP_SPDY)
     ngx_http_spdy_stream_t           *spdy_stream;

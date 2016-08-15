@@ -198,15 +198,15 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
      * http{
      *      ...
      *      ...
-     *      各个 module 的 [http_conf]、(空的 sever_conf)、(空的 location_conf)
+     *      各个 module 的 [http_conf]、(空的 sever_conf)、(空的 location_conf)  (存储在ngx_http_core_main_conf_t->ctx)
      *      server{
      *          ...
      *          ...
-     *          各个 module 的 [sever_conf]、(空的 location_conf)
+     *          各个 module 的 [sever_conf]、(空的 location_conf)  (存储在ngx_http_core_srv_conf->ctx)
      *           location{
      *                 ...
      *                 ...
-     *                 各个 module 的 [location_conf]
+     *                 各个 module 的 [location_conf]  (存在core_srv_conf->ctx)
      *            }
      *      }
      * }
@@ -668,7 +668,7 @@ ngx_http_merge_servers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
 
     cscfp = cmcf->servers.elts;
     ctx = (ngx_http_conf_ctx_t *) cf->ctx;
-    saved = *ctx;
+    saved = *ctx; // main 层的设置
     rv = NGX_CONF_OK;
 
     //遍历所有 core_server_conf
@@ -676,10 +676,15 @@ ngx_http_merge_servers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
 
         /* merge the server{}s' srv_conf's */
 
-        ctx->srv_conf = cscfp[s]->ctx->srv_conf;
+        ctx->srv_conf = cscfp[s]->ctx->srv_conf; //ngx_http_core_srv_conf_t->ctx->svr_conf 所有 server 层生成的 svr_conf
 
         //调用每个 module 的 merge_srv_conf 合并srv配置方法
         if (module->merge_srv_conf) {
+            /*
+             * 将 main 层生成的 srv_conf (见 ngx_http_block) 与 server 层生成的 srv_conf (见 ngx_http_core_server )
+             * 调用对应 module 合并方法合并
+             * 合并完存储于 cscfp[s]->ctx->srv_conf[ctx_index] (server 层生成的 srv_conf)
+             */
             rv = module->merge_srv_conf(cf, saved.srv_conf[ctx_index],
                                         cscfp[s]->ctx->srv_conf[ctx_index]);
             if (rv != NGX_CONF_OK) {
@@ -694,6 +699,11 @@ ngx_http_merge_servers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
 
             ctx->loc_conf = cscfp[s]->ctx->loc_conf;
 
+            /*
+             * 将 main 层生成的 loc_conf (见 ngx_http_block) 与 server 层生成的 loc_conf (见 ngx_http_core_server )
+             * 调用对应 module 合并方法合并
+             * 合并完存储于 cscfp[s]->ctx->loc_conf[ctx_index] (server 层生成的 loc_conf)
+             */
             rv = module->merge_loc_conf(cf, saved.loc_conf[ctx_index],
                                         cscfp[s]->ctx->loc_conf[ctx_index]);
             if (rv != NGX_CONF_OK) {
@@ -702,9 +712,15 @@ ngx_http_merge_servers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
 
             /* merge the locations{}' loc_conf's */
 
+
             clcf = cscfp[s]->ctx->loc_conf[ngx_http_core_module.ctx_index];
 
-            rv = ngx_http_merge_locations(cf, clcf->locations,
+            /*
+             * 将 server 层生成的 loc_conf (见 ngx_http_core_server ) 与 location 层生成的 loc_conf (见 ngx_http_core_location )
+             * 调用对应 module 合并方法合并
+             * 合并完存储于 clcf->locations 节点ngx_http_core_loc_conf_t 的loc_conf (location 层生成的 loc_conf)
+             */
+            rv = ngx_http_merge_locations(cf, clcf->locations /* queue */,
                                           cscfp[s]->ctx->loc_conf,
                                           module, ctx_index);
             if (rv != NGX_CONF_OK) {
@@ -751,14 +767,14 @@ ngx_http_merge_locations(ngx_conf_t *cf, ngx_queue_t *locations,
         clcf = lq->exact ? lq->exact : lq->inclusive;
         ctx->loc_conf = clcf->loc_conf;
 
-        //ngx_http_core_merge_loc_conf
+        //合并 location 设置，存储于 clcf->loc_conf[ctx_index] 中
         rv = module->merge_loc_conf(cf, loc_conf[ctx_index],
                                     clcf->loc_conf[ctx_index]);
         if (rv != NGX_CONF_OK) {
             return rv;
         }
 
-        //递归
+        //递归，处理 location{} 中嵌套的 location{}
         rv = ngx_http_merge_locations(cf, clcf->locations, clcf->loc_conf,
                                       module, ctx_index);
         if (rv != NGX_CONF_OK) {
