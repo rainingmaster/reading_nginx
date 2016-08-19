@@ -7,7 +7,7 @@ $5 = 2
 (gdb) p cmcf->phases[2].handlers.nelts
 $6 = 0
 (gdb) p cmcf->phases[3].handlers.nelts
-$7 = 2
+$7 = 3
 (gdb) p cmcf->phases[4].handlers.nelts
 $8 = 0
 (gdb) p cmcf->phases[5].handlers.nelts

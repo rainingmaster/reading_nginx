@@ -92,6 +92,9 @@ ngx_module_t  ngx_http_auth_basic_module = {
 };
 
 
+/*
+ * 将根据 auth_basic 开关进行跳转
+ */
 static ngx_int_t
 ngx_http_auth_basic_handler(ngx_http_request_t *r)
 {
@@ -122,6 +125,7 @@ ngx_http_auth_basic_handler(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
+    //auth_basic off;
     if (realm.len == 3 && ngx_strncmp(realm.data, "off", 3) == 0) {
         return NGX_DECLINED;
     }

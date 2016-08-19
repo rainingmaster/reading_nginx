@@ -583,8 +583,8 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 
             ph->checker = ngx_http_core_find_config_phase;
             /* ph->next = 0; */
-            n++; /* 即ph->next 将会多+1，会跳过本阶段的index，直接到达下阶段的index */
-            ph++;
+            n++; /* n++，随着下面的 ph++ 到达下一阶段 */
+            ph++; /* ph++ ，直接到达下阶段的index*/
 
             continue;
 
@@ -597,29 +597,34 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
             break;
 
         //本阶段无cmcf->phases[4].handlers.elts方法，因此ph->handler无内容
-        /*index=5*/case NGX_HTTP_POST_REWRITE_PHASE: //*4
+        /*index=6*/case NGX_HTTP_POST_REWRITE_PHASE: //*4
             if (use_rewrite) {
                 ph->checker = ngx_http_core_post_rewrite_phase;
                 ph->next = find_config_index; //返回到查找config阶段
-                n++; /* 即ph->next 将会多+1，会跳过本阶段的index，直接到达下阶段的index */
-                ph++;
+                n++; /* n++，随着下面的 ph++ 到达下一阶段 */
+                ph++; /* ph++ ，直接到达下阶段的index*/
             }
 
             continue;
 
         /*
-         *index=6 * case NGX_HTTP_PREACCESS_PHASE: //*5
+         *index=7 * case NGX_HTTP_PREACCESS_PHASE: //*5
          *  checker = ngx_http_core_generic_phase;
          */
 
-        /*index=8*/case NGX_HTTP_ACCESS_PHASE: //*6
+        /*index=9*/case NGX_HTTP_ACCESS_PHASE: //*6
             checker = ngx_http_core_access_phase;
-            n++; /* 即ph->next 将会多+1，会跳过本阶段的index，直接到达下阶段的index */
+            /*
+             * 如果 NGX_HTTP_ACCESS_PHASE 的 handlers 大于0，即 use_access=1 直接跳过下个阶段，即直接到 NGX_HTTP_CONTENT_PHASE(或NGX_HTTP_TRY_FILES_PHASE)
+             * 如果 NGX_HTTP_ACCESS_PHASE 的 handlers 等于0，即 use_access=0 n将会在 NGX_HTTP_CONTENT_PHASE 阶段的 next 多加 1 (NGX_HTTP_TRY_FILES_PHASE 不受影响)
+             */
+            n++;
             break;
 
-        /*index=10*/case NGX_HTTP_POST_ACCESS_PHASE: //*7
+        /*index=12*/case NGX_HTTP_POST_ACCESS_PHASE: //*7
             if (use_access) {
                 ph->checker = ngx_http_core_post_access_phase;
+                /* ph->handler = NULL; */
                 ph->next = n;
                 ph++;
             }
@@ -635,7 +640,7 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 
             continue;
 
-        /*index=11*/case NGX_HTTP_CONTENT_PHASE: //*9
+        /*index=12*/case NGX_HTTP_CONTENT_PHASE: //*9
             checker = ngx_http_core_content_phase;
             break;
 
