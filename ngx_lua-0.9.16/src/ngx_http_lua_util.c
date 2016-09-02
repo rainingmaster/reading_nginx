@@ -183,7 +183,7 @@ void
 ngx_http_lua_create_new_globals_table(lua_State *L, int narr, int nrec)
 {
     lua_createtable(L, narr, nrec + 1);
-    lua_pushvalue(L, -1);
+    lua_pushvalue(L, -1); //相当于复制了一个空表
     lua_setfield(L, -2, "_G");
 }
 
@@ -324,26 +324,26 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
     base = lua_gettop(L);
 
     lua_pushlightuserdata(L, &ngx_http_lua_coroutines_key);
-    lua_rawget(L, LUA_REGISTRYINDEX);
+    lua_rawget(L, LUA_REGISTRYINDEX); //LUA_REGISTRYINDEX[ngx_http_lua_coroutines_key] => table
 
-    co = lua_newthread(L);
+    co = lua_newthread(L); //lua_gettop(L) => 3
 
     /*  {{{ inherit coroutine's globals to main thread's globals table
      *  for print() function will try to find tostring() in current
      *  globals table.
      */
     /*  new globals table for coroutine */
-    ngx_http_lua_create_new_globals_table(co, 0, 0); //给co中创建一个_G
+    ngx_http_lua_create_new_globals_table(co, 0, 0); //给co中创建一个_G，大小也是 0, 1；后面还会跟一个空表
 
-    lua_createtable(co, 0, 1);
-    ngx_http_lua_get_globals_table(co);
-    lua_setfield(co, -2, "__index");
-    lua_setmetatable(co, -2);
+    lua_createtable(co, 0, 1); //lua_gettop(co) => 2
+    ngx_http_lua_get_globals_table(co); //获取继承过来的globals表。lua_gettop(co) => 3
+    lua_setfield(co, -2, "__index");  //将globals表作为__index索引，栈顶-1。lua_gettop(co) => 2
+    lua_setmetatable(co, -2); //空表作为metatable元表。lua_gettop(co) => 1。
 
-    ngx_http_lua_set_globals_table(co);
+    ngx_http_lua_set_globals_table(co); //lua_gettop(co) => 0
     /*  }}} */
 
-    *ref = luaL_ref(L, -2);
+    *ref = luaL_ref(L, -2); //lua_gettop(L, -2) => 5,即 ngx_http_lua_coroutines_key 表
 
     if (*ref == LUA_NOREF) {
         lua_settop(L, base);  /* restore main thread stack */
