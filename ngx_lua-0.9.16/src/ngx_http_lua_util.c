@@ -337,10 +337,10 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
 
     lua_createtable(co, 0, 1); //lua_gettop(co) => 2
     ngx_http_lua_get_globals_table(co); //获取继承过来的globals表。lua_gettop(co) => 3
-    lua_setfield(co, -2, "__index");  //将globals表作为__index索引，栈顶-1。lua_gettop(co) => 2
-    lua_setmetatable(co, -2); //空表作为metatable元表。lua_gettop(co) => 1。
+    lua_setfield(co, -2, "__index");  //将栈顶-2的空表表作为__index索引，栈顶-1。lua_gettop(co) => 2
+    lua_setmetatable(co, -2); //栈顶-2空表作为metatable元表。lua_gettop(co) => 1。
 
-    ngx_http_lua_set_globals_table(co); //lua_gettop(co) => 0
+    ngx_http_lua_set_globals_table(co); //栈顶的golbal_table仍作为全局表。lua_gettop(co) => 0
     /*  }}} */
 
     *ref = luaL_ref(L, -2); //lua_gettop(L, -2) => 5,即 ngx_http_lua_coroutines_key 表
