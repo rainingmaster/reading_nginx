@@ -2038,6 +2038,7 @@ ngx_http_output_filter(ngx_http_request_t *r, ngx_chain_t *in)
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "http output filter \"%V?%V\"", &r->uri, &r->args);
 
+    /* 函数指针，搜索 ngx_http_top_body_filter =  可得 */
     rc = ngx_http_top_body_filter(r, in);
 
     if (rc == NGX_ERROR) {

@@ -343,7 +343,7 @@ ngx_http_lua_new_thread(ngx_http_request_t *r, lua_State *L, int *ref)
     ngx_http_lua_set_globals_table(co); //lua_gettop(co) => 0
     /*  }}} */
 
-    *ref = luaL_ref(L, -2); //lua_gettop(L, -2) => 5,即 ngx_http_lua_coroutines_key 表
+    *ref = luaL_ref(L, -2); //将栈顶的co在 ngx_http_lua_coroutines_key 表中加一个引用，防止被回收。lua_gettop(L, -2) => 5
 
     if (*ref == LUA_NOREF) {
         lua_settop(L, base);  /* restore main thread stack */
