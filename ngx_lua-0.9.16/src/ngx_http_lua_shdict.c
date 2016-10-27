@@ -341,6 +341,7 @@ ngx_http_lua_inject_shdict_api(ngx_http_lua_main_conf_t *lmcf, lua_State *L)
 
         zone = lmcf->shm_zones->elts;
 
+        /* 将所有 shared_dict 放入堆栈，并使用上面的表作为元表，用于查询 */
         for (i = 0; i < lmcf->shm_zones->nelts; i++) {
             ctx = zone[i]->data;
 

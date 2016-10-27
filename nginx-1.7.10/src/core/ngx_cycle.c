@@ -421,6 +421,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         opart = &old_cycle->shared_memory.part;
         oshm_zone = opart->elts;
 
+        /* 构建各个模块的之前注册的 share memory */
         for (n = 0; /* void */ ; n++) {
 
             if (n >= opart->nelts) {

@@ -157,6 +157,7 @@ ngx_http_lua_init_worker(ngx_cycle_t *cycle)
         return NGX_ERROR;
     }
 
+    /* 建立一套独立的 srv、loc 配置 */
     for (i = 0; ngx_modules[i]; i++) {
         if (ngx_modules[i]->type != NGX_HTTP_MODULE) {
             continue;

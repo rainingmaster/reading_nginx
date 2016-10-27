@@ -91,6 +91,7 @@ ngx_http_lua_shared_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ctx->main_conf = lmcf;
     ctx->log = &cf->cycle->new_log;
 
+    /* 使用 nginx 自带共享内存方案，本身用于访问数限制/文件缓存等地方 */
     zone = ngx_shared_memory_add(cf, &name, (size_t) size,
                                  &ngx_http_lua_module);
     if (zone == NULL) {

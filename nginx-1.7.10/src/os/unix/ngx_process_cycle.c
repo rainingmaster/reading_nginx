@@ -229,6 +229,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
             continue;
         }
 
+        /* 收到重新加载配置 config 的消息，即kill -HUP pid */
         if (ngx_reconfigure) {
             ngx_reconfigure = 0;
 
@@ -252,6 +253,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
             ngx_cycle = cycle;
             ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx,
                                                    ngx_core_module);
+            /* 开启新的子进程 */
             ngx_start_worker_processes(cycle, ccf->worker_processes,
                                        NGX_PROCESS_JUST_RESPAWN);
             ngx_start_cache_manager_processes(cycle, 1);
@@ -260,6 +262,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
             ngx_msleep(100);
 
             live = 1;
+            /* 发送退出消息给旧的子进程 */
             ngx_signal_worker_processes(cycle,
                                         ngx_signal_value(NGX_SHUTDOWN_SIGNAL));
         }

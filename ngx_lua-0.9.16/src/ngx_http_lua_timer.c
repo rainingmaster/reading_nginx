@@ -140,7 +140,10 @@ ngx_http_lua_ngx_timer_at(lua_State *L)
         lmcf->watcher->data = lmcf;
     }
 
-    vm = ngx_http_lua_get_lua_vm(r, ctx); //原始的 lua vm 实例
+    /* vm 为原始的 lua vm 实例, main thread
+     * L 为一个协程，即协程上再跑协程，可以实现循环
+     */
+    vm = ngx_http_lua_get_lua_vm(r, ctx);
 
     co = lua_newthread(vm); //新建一个协程来操作
 
