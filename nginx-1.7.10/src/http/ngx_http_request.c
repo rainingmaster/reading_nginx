@@ -3473,6 +3473,7 @@ ngx_http_close_request(ngx_http_request_t *r, ngx_int_t rc)
         ngx_log_error(NGX_LOG_ALERT, c->log, 0, "http request count is zero");
     }
 
+    /* 关闭一项链接，但如果 request 被阻塞或者仍有链接数就不会被清空 */
     r->count--;
 
     if (r->count || r->blocked) {

@@ -396,6 +396,7 @@ ngx_http_lua_socket_tcp(lua_State *L)
 }
 
 
+/* ngx.tcp.sock 的 connect 处理函数 */
 static int
 ngx_http_lua_socket_tcp_connect(lua_State *L)
 {
@@ -595,6 +596,7 @@ ngx_http_lua_socket_tcp_connect(lua_State *L)
         u->connect_timeout = u->conf->connect_timeout;
     }
 
+    /* 设置 u->peer.connection */
     rc = ngx_http_lua_get_keepalive_peer(r, L, key_index, u);
 
     if (rc == NGX_OK) {
